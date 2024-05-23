@@ -129,9 +129,9 @@ Request body:
 
 ```json
 {
-  "username": "string", // not null | minLength: 5 | maxLength: 30 | unique for all types of users
-  "password": "string", // not null | minLength: 5 | maxLength: 30
-  "email": "string" // not null | should a valid email | can duplicate with user, but not with admin
+  "username": "string",
+  "password": "string",
+  "email": "string"
 }
 ```
 
@@ -151,8 +151,8 @@ Request body:
 
 ```json
 {
-  "username": "string", // not null | minLength: 5 | maxLength: 30
-  "password": "string" // not null | minLength: 5 | maxLength: 30
+  "username": "string",
+  "password": "string"
 }
 ```
 
@@ -160,7 +160,7 @@ Response body:
 
 ```json
 {
-  "token": "" // JWT token
+  "token": ""
 }
 ```
 
@@ -174,9 +174,9 @@ Request body:
 
 ```json
 {
-  "username": "string", // not null | minLength: 5 | maxLength: 30 | unique for all types of users
-  "password": "string", // not null | minLength: 5 | maxLength: 30
-  "email": "string" // not null | should a valid email | can duplicate with admin, but not with user
+  "username": "string",
+  "password": "string",
+  "email": "string"
 }
 ```
 
@@ -184,7 +184,7 @@ Response body:
 
 ```json
 {
-  "token": "" // JWT token
+  "token": ""
 }
 ```
 
@@ -196,8 +196,8 @@ Request body:
 
 ```json
 {
-  "username": "string", // not null | minLength: 5 | maxLength: 30
-  "password": "string" // not null | minLength: 5 | maxLength: 30
+  "username": "string",
+  "password": "string"
 }
 ```
 
@@ -205,7 +205,7 @@ Response body:
 
 ```json
 {
-  "token": "" // JWT token
+  "token": ""
 }
 ```
 
@@ -241,19 +241,12 @@ Request body:
 
 ```json
 {
-  "name": "", // not null | minLength 2 | maxLength 30
-  "merchantCategory": "" /** enum of:
-	- `SmallRestaurant`
-	- `MediumRestaurant`
-	- `LargeRestaurant`
-	- `MerchandiseRestaurant`
-	- `BoothKiosk`
-	- `ConvenienceStore`
-		*/,
-  "imageUrl": "", // not null | should be image url
+  "name": "",
+  "merchantCategory": "",
+  "imageUrl": "",
   "location": {
-    "lat": 1, // not null | float
-    "long": 1 // not null | float
+    "lat": 1,
+    "long": 1
   }
 }
 ```
@@ -262,7 +255,7 @@ Response body:
 
 ```json
 {
-  "merchantId": "" // should be string
+  "merchantId": ""
 }
 ```
 
@@ -292,7 +285,7 @@ Response body:
         "lat": 1,
         "long": 1
       },
-      "createdAt": "" // should in ISO 8601 format with nanoseconds
+      "createdAt": ""
     }
   ],
   "meta": {
@@ -312,16 +305,10 @@ Request body:
 ```json
 [
   {
-    "name": "string", // not null | minLength 2 | maxLength 30
-    "productCategory": "" /** enum of:
-    - `Beverage`
-		- `Food`
-		- `Snack`
-		- `Condiments`
-		- `Additions`
-		*/,
-    "price": 1, // not null | min 1
-    "imageUrl": "" // not null | should be image url
+    "name": "string",
+    "productCategory": "",
+    "price": 1,
+    "imageUrl": ""
   }
 ]
 ```
@@ -330,7 +317,7 @@ Response body:
 
 ```json
 {
-  "itemId": "" // should be string
+  "itemId": ""
 }
 ```
 
@@ -357,7 +344,7 @@ Response body:
       "productCategory": "",
       "price": 1,
       "imageUrl": "",
-      "createdAt": "" // should in ISO 8601 format with nanoseconds
+      "createdAt": ""
     }
   ],
   "meta": {
@@ -396,7 +383,7 @@ Response body:
           "lat": 1,
           "long": 1
         },
-        "createdAt": "" // should in ISO 8601 format with nanoseconds
+        "createdAt": ""
       },
       "items": [
         {
@@ -405,7 +392,7 @@ Response body:
           "productCategory": "",
           "price": 1,
           "imageUrl": "",
-          "createdAt": "" // should in ISO 8601 format with nanoseconds
+          "createdAt": ""
         }
       ]
     }
@@ -422,16 +409,16 @@ Request body:
 ```json
 {
   "userLocation": {
-    "lat": 1, // not null | float
-    "long": 1 // not null | float
+    "lat": 1,
+    "long": 1
   },
   "orders": [
     {
-      "merchantId": "string", // not null
+      "merchantId": "string",
       "items": [
         {
-          "itemId": "string", // not null
-          "quantity": 1 // not null
+          "itemId": "string",
+          "quantity": 1
         }
       ]
     }
@@ -445,7 +432,7 @@ Response body:
 {
   "totalPrice": 1,
   "estimatedDeliveryTimeInMinutes": 1,
-  "calculatedEstimateId": "" // save the calculation in the system
+  "calculatedEstimateId": ""
 }
 ```
 
@@ -457,7 +444,7 @@ Request body:
 
 ```json
 {
-  "calculatedEstimateId": "" // not null
+  "calculatedEstimateId": ""
 }
 ```
 
@@ -465,7 +452,7 @@ Response body:
 
 ```json
 {
-  "orderId": "" // should be string
+  "orderId": ""
 }
 ```
 
@@ -497,7 +484,7 @@ Response body:
             "lat": 1,
             "long": 1
           },
-          "createdAt": "" // should in ISO 8601 format with nanoseconds
+          "createdAt": ""
         },
         "items": [
           {
@@ -506,7 +493,7 @@ Response body:
             "productCategory": "",
             "price": 1,
             "imageUrl": "",
-            "createdAt": "" // should in ISO 8601 format with nanoseconds
+            "createdAt": ""
           }
         ]
       }
