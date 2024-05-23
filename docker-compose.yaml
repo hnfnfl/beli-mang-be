@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:14.11
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: beli-mang
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  beliMang:
+    image: beli-mang-be:latest
+    container_name: beliMang
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      - ENVIRONMENT=development
+      - LOGLEVEL=debug
+      - AUTHEXPIRY=1
+      - DB_NAME=beli-mang
+      - DB_PORT=5432
+      - DB_HOST=172.19.0.1
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=admin
+      - DB_PARAMS=sslmode=disable
+      - DB_MAXIDLECONNS=20
+      - DB_MAXOPENCONNS=20
+      - JWT_SECRET=mysecret
+      - JWT_BCRYPTSALT=10
+      - AWS_ACCESS_KEY_ID=mysecret
+      - AWS_SECRET_ACCESS_KEY=mysecret
+      - AWS_S3_BUCKET_NAME=mysecret
+      - AWS_REGION=ap-southeast-1
+
+volumes:
+  postgres_data:
+    driver: local

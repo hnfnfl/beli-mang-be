@@ -1,0 +1,23 @@
+Environment: development
+LogLevel: debug
+AUTHEXPIRY: 1 # in hours
+
+DB:
+  Name: beli-mang
+  Port: 5432
+  Host: localhost
+  Username: postgres
+  Password: admin
+  Params: sslmode=disable
+  MaxIdleConns: 20
+  MaxOpenConns: 20
+
+Jwt:
+  Secret: mysecret
+  BcryptSalt: 10
+
+AWS:
+  Access.Key.ID: myid
+  Secret.Access.Key: mysecret
+  S3.Bucket.Name: mybucket
+  Region: ap-southeast-1
