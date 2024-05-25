@@ -3,6 +3,7 @@ package handler
 import (
 	"beli-mang/internal/db"
 	"beli-mang/internal/pkg/configuration"
+	"beli-mang/internal/pkg/service"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -24,8 +25,9 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 		c.Set("db", db)
 	})
 
-	// service := service.NewService(cfg, db)
+	service := service.NewService(cfg, db)
 	// userHandler := NewUserHandler(service)
+	merchantHandler := NewMerchantHandler(service)
 
 	// login
 	// authGroup := router.Group("/v1/user/")
@@ -33,8 +35,9 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	// authGroup.POST("it/login", userHandler.Login)
 	// authGroup.POST("nurse/login", userHandler.Login)
 
-	// nurseGroup := router.Group("/v1/user/")
-	// nurseGroup.Use(middleware.JWTAuthMiddleware(cfg))
+	// merchantGroup := router.Group("/admin/merchants")
+	// merchantGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
+	router.POST("/admin/merchants", merchantHandler.AddMerchant)
 
 	return router.Run(":8080")
 }

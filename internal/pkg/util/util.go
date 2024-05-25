@@ -10,14 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type PrefixID string
-
-const (
-	ITPrefix    PrefixID = "IT"
-	NursePrefix PrefixID = "NS"
-)
-
-func UuidGenerator(prefix PrefixID, length int) string {
+func UuidGenerator(prefix string, length int) string {
 	const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	randStr := make([]byte, length)
 	for i := range randStr {
@@ -47,10 +40,10 @@ func JsonBinding(ctx *gin.Context, in interface{}) (string, error) {
 
 func IsValidUrl(in string) bool {
 	u, err := url.ParseRequestURI(in)
-	if err != nil || u.Scheme == "" || u.Host == "" {
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return false
 	}
 
-	re := regexp.MustCompile(`\.[a-zA-Z]+$`)
-	return re.MatchString(u.Host)
+	re := regexp.MustCompile(`\.(jpg|jpeg)$`)
+	return re.MatchString(u.Path)
 }

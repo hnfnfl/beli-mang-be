@@ -7,8 +7,7 @@ import (
 )
 
 type Response struct {
-	Code int `json:"code,omitempty"`
-
+	Code    int         `json:"code"`
 	Message string      `json:"message,omitempty"`
 	Error   string      `json:"error,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
@@ -57,6 +56,13 @@ func NewUnauthorizedError(msg string) Response {
 	return Response{
 		Code:    http.StatusUnauthorized,
 		Message: msg,
+	}
+}
+
+func RespCreated(data interface{}) Response {
+	return Response{
+		Code: http.StatusCreated,
+		Data: data,
 	}
 }
 
