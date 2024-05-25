@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func JWTSign(cfg *configuration.Configuration, userId string, nip string, role string) (string, error) {
+func JWTSign(cfg *configuration.Configuration, username, role string) (string, error) {
 	expiry := time.Duration(cfg.AuthExpiry) * time.Hour
 	timeStamp := time.Now()
 	expiryTime := timeStamp.Add(expiry)
@@ -20,16 +20,15 @@ func JWTSign(cfg *configuration.Configuration, userId string, nip string, role s
 		jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(timeStamp),
 			ExpiresAt: jwt.NewNumericDate(expiryTime),
-			ID:        userId,
-			Issuer:    nip,
-			Subject:   role,
+			ID:        username,
+			Issuer:    role,
 		},
 	)
 
 	return token.SignedString([]byte(cfg.JWTSecret))
 }
 
-func JWTAuthMiddleware(cfg *configuration.Configuration) gin.HandlerFunc {
+func JWTAuth(secret string, expectedIssuer string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const BearerSchema = "Bearer "
 		authHeader := c.GetHeader("Authorization")
@@ -50,7 +49,7 @@ func JWTAuthMiddleware(cfg *configuration.Configuration) gin.HandlerFunc {
 				return nil, errs.ErrInvalidSigningMethod
 			}
 
-			return []byte(cfg.JWTSecret), nil
+			return []byte(secret), nil
 		})
 		if err != nil {
 			errs.NewUnauthorizedError(err.Error()).Send(c)
@@ -65,8 +64,8 @@ func JWTAuthMiddleware(cfg *configuration.Configuration) gin.HandlerFunc {
 		}
 
 		claims, ok := token.Claims.(*jwt.RegisteredClaims)
-		if !ok {
-			errs.NewUnauthorizedError(errs.ErrInvalidClaimsType.Error()).Send(c)
+		if !ok || claims.Issuer != expectedIssuer {
+			errs.NewUnauthorizedError("Invalid User Role").Send(c)
 			c.Abort()
 			return
 		}

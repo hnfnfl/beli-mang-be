@@ -7,11 +7,15 @@ import (
 )
 
 type Response struct {
-	Code int `json:"code,omitempty"`
-
+	Code    int
 	Message string      `json:"message,omitempty"`
 	Error   string      `json:"error,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
+}
+
+type RawResponse struct {
+	Code int
+	Data map[string]interface{} `json:"data,omitempty"`
 }
 
 func NewGenericError(code int, msg string) Response {
@@ -57,6 +61,13 @@ func NewUnauthorizedError(msg string) Response {
 	return Response{
 		Code:    http.StatusUnauthorized,
 		Message: msg,
+	}
+}
+
+func RespCreated(data interface{}) Response {
+	return Response{
+		Code: http.StatusCreated,
+		Data: data,
 	}
 }
 
