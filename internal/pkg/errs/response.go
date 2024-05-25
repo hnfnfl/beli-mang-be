@@ -28,11 +28,10 @@ func NewInternalError(msg string, err error) Response {
 	}
 }
 
-func NewNotFoundError(msg string, err error) Response {
+func NewNotFoundError(err error) Response {
 	return Response{
-		Code:    http.StatusNotFound,
-		Error:   err.Error(),
-		Message: msg,
+		Code:  http.StatusNotFound,
+		Error: err.Error(),
 	}
 }
 
