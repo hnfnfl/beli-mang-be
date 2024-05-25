@@ -7,15 +7,10 @@ import (
 )
 
 type Response struct {
-	Code    int
+	Code    int         `json:"code"`
 	Message string      `json:"message,omitempty"`
 	Error   string      `json:"error,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
-}
-
-type RawResponse struct {
-	Code int
-	Data map[string]interface{} `json:"data,omitempty"`
 }
 
 func NewGenericError(code int, msg string) Response {
