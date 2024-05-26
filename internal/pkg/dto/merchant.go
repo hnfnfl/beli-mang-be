@@ -73,8 +73,8 @@ type AddMerchantItemResponse struct {
 	ItemId string `json:"itemId"`
 }
 
-func (r AddMerchantRequest) Validate() error {
-	if err := validation.ValidateStruct(&r,
+func (r *AddMerchantRequest) Validate() error {
+	if err := validation.ValidateStruct(r,
 		validation.Field(&r.Name,
 			validation.Required,
 			validation.Length(2, 30),
@@ -113,8 +113,8 @@ func (r AddMerchantRequest) Validate() error {
 	return nil
 }
 
-func (r AddMerchantItemRequest) Validate() error {
-	if err := validation.ValidateStruct(&r,
+func (r *AddMerchantItemRequest) Validate() error {
+	if err := validation.ValidateStruct(r,
 		validation.Field(&r.MerchantId,
 			validation.Required,
 		),
