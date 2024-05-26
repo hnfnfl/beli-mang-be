@@ -38,7 +38,7 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	merchantGroup := router.Group("/admin/merchants/")
 	// merchantGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
 	merchantGroup.POST("", merchantHandler.AddMerchant)
-	merchantGroup.POST(":merchantId/items", merchantHandler.AddMerchantItems)
+	merchantGroup.POST(":merchantId/items", merchantHandler.AddMerchantItem)
 
 	return router.Run(":8080")
 }

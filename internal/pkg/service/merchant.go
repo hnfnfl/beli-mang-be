@@ -18,7 +18,7 @@ func (s *Service) InsertMerchant(data dto.AddMerchantRequest) (string, errs.Resp
 	return data.MerchantId, errs.Response{}
 }
 
-func (s *Service) InsertMerchantItems(data dto.AddMerchantItemRequest) (string, errs.Response) {
+func (s *Service) InsertMerchantItem(data dto.AddMerchantItemRequest) (string, errs.Response) {
 	db := s.DB()
 
 	// check if merchant exists

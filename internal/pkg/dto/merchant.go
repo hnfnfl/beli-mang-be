@@ -69,7 +69,7 @@ type AddMerchantItemRequest struct {
 	ImageUrl        string `json:"imageUrl"`
 }
 
-type AddMerchantItemsResponse struct {
+type AddMerchantItemResponse struct {
 	ItemId string `json:"itemId"`
 }
 

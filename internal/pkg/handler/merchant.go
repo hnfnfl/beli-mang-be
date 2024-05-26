@@ -61,7 +61,7 @@ func (h *MerchantHandler) AddMerchant(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, dto.AddMerchantResponse{MerchantId: merchantID})
 }
 
-func (h *MerchantHandler) AddMerchantItems(ctx *gin.Context) {
+func (h *MerchantHandler) AddMerchantItem(ctx *gin.Context) {
 	body := dto.AddMerchantItemRequest{}
 	msg, err := util.JsonBinding(ctx, &body)
 	if err != nil {
@@ -96,7 +96,7 @@ func (h *MerchantHandler) AddMerchantItems(ctx *gin.Context) {
 		return
 	}
 
-	merchantItemID, errs := h.service.InsertMerchantItems(body)
+	merchantItemID, errs := h.service.InsertMerchantItem(body)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return
@@ -104,6 +104,6 @@ func (h *MerchantHandler) AddMerchantItems(ctx *gin.Context) {
 
 	ctx.JSON(
 		http.StatusCreated,
-		dto.AddMerchantItemsResponse{ItemId: merchantItemID},
+		dto.AddMerchantItemResponse{ItemId: merchantItemID},
 	)
 }
