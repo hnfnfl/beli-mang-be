@@ -139,7 +139,7 @@ Response body:
 
 ```json
 {
-  "token": "" 
+  "token": ""
 }
 ```
 
@@ -303,14 +303,12 @@ Endpoint: `POST /admin/merchants/:merchantId/items`
 Request body:
 
 ```json
-[
-  {
-    "name": "string",
-    "productCategory": "",
-    "price": 1,
-    "imageUrl": ""
-  }
-]
+{
+  "name": "string",
+  "productCategory": "",
+  "price": 1,
+  "imageUrl": ""
+}
 ```
 
 Response body:
