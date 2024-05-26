@@ -70,7 +70,7 @@ func (h *MerchantHandler) AddMerchantItems(ctx *gin.Context) {
 	}
 
 	body.MerchantId = ctx.Param("merchantId")
-	
+
 	var prefixID string
 	switch body.ProductCategory {
 	case string(dto.Beverage):
@@ -102,5 +102,8 @@ func (h *MerchantHandler) AddMerchantItems(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, dto.AddMerchantItemsResponse{ItemId: merchantItemID})
+	ctx.JSON(
+		http.StatusCreated,
+		dto.AddMerchantItemsResponse{ItemId: merchantItemID},
+	)
 }
