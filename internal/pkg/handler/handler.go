@@ -29,6 +29,7 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	// userHandler := NewUserHandler(service)
 	merchantHandler := NewMerchantHandler(service)
 	imageHandler := NewImageHandler(service)
+	purchaseHandler := NewPurchaseHandler(service)
 
 	// login
 	// authGroup := router.Group("/v1/user/")
@@ -42,6 +43,9 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	merchantGroup.GET("", merchantHandler.GetMerchants)
 	merchantGroup.POST(":merchantId/items", merchantHandler.AddMerchantItem)
 	merchantGroup.GET(":merchantId/items", merchantHandler.GetMerchantItems)
+
+	purchaseGroup := router.Group("")
+	purchaseGroup.POST("/merchants/nearby/:lat,:long", purchaseHandler.NearbyMerchant)
 
 	imageGroup := router.Group("/image/")
 	// imageGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
