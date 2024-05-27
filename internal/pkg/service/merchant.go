@@ -34,6 +34,9 @@ func (s *Service) GetMerchants(data dto.GetMerchantsRequest) (*dto.GetMerchantsR
 		count     *int
 	)
 
+	// set default value
+	merchants.Data = make([]model.Merchant, 0)
+
 	stmt.WriteString("WITH filtered AS (SELECT * FROM merchants WHERE 1=1 ")
 
 	if data.MerchantId != "" {
@@ -45,7 +48,7 @@ func (s *Service) GetMerchants(data dto.GetMerchantsRequest) (*dto.GetMerchantsR
 	}
 
 	if data.MerchantCategory == "<invalid>" {
-		return nil, errs.Response{Data: []model.Merchant{}}
+		return &merchants, errs.Response{}
 	} else if data.MerchantCategory != "" {
 		stmt.WriteString(fmt.Sprintf("AND merchant_categories = '%s' ", data.MerchantCategory))
 	}
@@ -90,7 +93,7 @@ func (s *Service) GetMerchants(data dto.GetMerchantsRequest) (*dto.GetMerchantsR
 	}
 
 	if merchants.Data == nil {
-		return nil, errs.Response{Data: []model.Merchant{}}
+		return &merchants, errs.Response{}
 	} else {
 		merchants.Meta = &errs.Meta{
 			Limit:  data.Limit,
@@ -129,4 +132,82 @@ func (s *Service) InsertMerchantItem(data dto.AddMerchantItemRequest) (*dto.AddM
 			ItemId: item.ItemId,
 		},
 		errs.Response{}
+}
+
+func (s *Service) GetMerchantItems(data dto.GetMerchantItemsRequest) (*dto.GetMerchantItemsResponse, errs.Response) {
+	db := s.DB()
+	var (
+		stmt  strings.Builder
+		items dto.GetMerchantItemsResponse
+		count *int
+	)
+
+	// set default value
+	items.Data = make([]model.MerchantItem, 0)
+
+	stmt.WriteString("WITH filtered AS (SELECT item_id, name, product_categories, price, image_url, created_at FROM merchant_items WHERE 1=1 ")
+
+	if data.ItemId != "" {
+		stmt.WriteString(fmt.Sprintf("AND item_id = '%s' ", data.ItemId))
+	}
+
+	if data.Name != "" {
+		stmt.WriteString(fmt.Sprintf("AND name LIKE '%%%s%%' ", data.Name))
+	}
+
+	if data.ProductCategory == "<invalid>" {
+		return &items, errs.Response{}
+	} else if data.ProductCategory != "" {
+		stmt.WriteString(fmt.Sprintf("AND product_categories = '%s' ", data.ProductCategory))
+	}
+
+	stmt.WriteString(") SELECT(SELECT COUNT(*) FROM filtered) AS total, f.* FROM filtered f ")
+
+	if data.CreatedAt == "ASC" {
+		stmt.WriteString("ORDER BY created_at ASC")
+	} else {
+		stmt.WriteString("ORDER BY created_at DESC")
+	}
+
+	stmt.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", data.Limit, data.Offset))
+
+	rows, err := db.Query(stmt.String())
+	if err != nil {
+		return nil, errs.NewInternalError("Failed to get merchant items", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			item      model.MerchantItem
+			createdAt time.Time
+		)
+		if err := rows.Scan(
+			&count,
+			&item.ItemId,
+			&item.Name,
+			&item.ProductCategory,
+			&item.Price,
+			&item.ImageUrl,
+			&createdAt,
+		); err != nil {
+			return nil, errs.NewInternalError("Failed to scan merchant items", err)
+		}
+
+		item.CreatedAt = createdAt.Format(time.RFC3339Nano)
+
+		items.Data = append(items.Data, item)
+	}
+
+	if items.Data == nil {
+		return &items, errs.Response{}
+	} else {
+		items.Meta = &errs.Meta{
+			Limit:  data.Limit,
+			Offset: data.Offset,
+			Total:  *count,
+		}
+
+		return &items, errs.Response{}
+	}
 }
