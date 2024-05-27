@@ -91,6 +91,7 @@ type GetMerchantsResponse struct {
 }
 
 type GetMerchantItemsRequest struct {
+	MerchantId      string
 	ItemId          string `form:"itemId"`
 	Limit           int    `form:"limit"`
 	Offset          int    `form:"offset"`
