@@ -92,7 +92,7 @@ func (s *Service) GetMerchants(data dto.GetMerchantsRequest) (*dto.GetMerchantsR
 		merchants.Data = append(merchants.Data, merchant)
 	}
 
-	if merchants.Data == nil {
+	if len(merchants.Data) == 0 {
 		return &merchants, errs.Response{}
 	} else {
 		merchants.Meta = &errs.Meta{
@@ -147,6 +147,8 @@ func (s *Service) GetMerchantItems(data dto.GetMerchantItemsRequest) (*dto.GetMe
 
 	stmt.WriteString("WITH filtered AS (SELECT item_id, name, product_categories, price, image_url, created_at FROM merchant_items WHERE 1=1 ")
 
+	stmt.WriteString(fmt.Sprintf("AND merchant_id = '%s' ", data.MerchantId))
+
 	if data.ItemId != "" {
 		stmt.WriteString(fmt.Sprintf("AND item_id = '%s' ", data.ItemId))
 	}
@@ -199,7 +201,7 @@ func (s *Service) GetMerchantItems(data dto.GetMerchantItemsRequest) (*dto.GetMe
 		items.Data = append(items.Data, item)
 	}
 
-	if items.Data == nil {
+	if len(items.Data) == 0 {
 		return &items, errs.Response{}
 	} else {
 		items.Meta = &errs.Meta{

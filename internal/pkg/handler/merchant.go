@@ -152,6 +152,7 @@ func (h *MerchantHandler) GetMerchantItems(ctx *gin.Context) {
 		return
 	}
 
+	body.MerchantId = ctx.Param("merchantId")
 	body.CreatedAt = strings.ToUpper(body.CreatedAt)
 	body.Name = strings.ToLower(body.Name)
 
