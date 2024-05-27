@@ -6,11 +6,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Meta struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+	Total  int `json:"total"`
+}
+
 type Response struct {
-	Code    int         `json:"code"`
+	Code    int         `json:"code,omitempty"`
 	Message string      `json:"message,omitempty"`
 	Error   string      `json:"error,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
+	Meta    *Meta       `json:"meta,omitempty"`
 }
 
 func NewGenericError(code int, msg string) Response {
@@ -55,13 +62,6 @@ func NewUnauthorizedError(msg string) Response {
 	return Response{
 		Code:    http.StatusUnauthorized,
 		Message: msg,
-	}
-}
-
-func RespCreated(data interface{}) Response {
-	return Response{
-		Code: http.StatusCreated,
-		Data: data,
 	}
 }
 

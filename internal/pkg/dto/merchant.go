@@ -1,7 +1,10 @@
 package dto
 
 import (
+	"beli-mang/internal/db/model"
+	"beli-mang/internal/pkg/errs"
 	"beli-mang/internal/pkg/util"
+	"strconv"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
@@ -73,6 +76,20 @@ type AddMerchantItemResponse struct {
 	ItemId string `json:"itemId"`
 }
 
+type GetMerchantsRequest struct {
+	MerchantId       string `form:"merchantId"`
+	Limit            int    `form:"limit"`
+	Offset           int    `form:"offset"`
+	Name             string `form:"name"`
+	MerchantCategory string `form:"merchantCategory"`
+	CreatedAt        string `form:"createdAt"`
+}
+
+type GetMerchantsResponse struct {
+	Data []model.Merchant `json:"data"`
+	Meta *errs.Meta       `json:"meta"`
+}
+
 func (r *AddMerchantRequest) Validate() error {
 	if err := validation.ValidateStruct(r,
 		validation.Field(&r.Name,
@@ -111,6 +128,33 @@ func (r *AddMerchantRequest) Validate() error {
 	}
 
 	return nil
+}
+
+func (r *GetMerchantsRequest) Validate() error {
+	_, err := strconv.Atoi(r.MerchantId)
+	if err == nil {
+		return validation.NewError("merchantId", "merchantId must be a string")
+	}
+
+	_, err = strconv.Atoi(r.Name)
+	if err == nil {
+		return validation.NewError("name", "name must be a string")
+	}
+
+	if err := validation.Validate(&r.MerchantCategory,
+		validation.In(MerchantCategoryList...),
+	); err != nil {
+		r.MerchantCategory = "<invalid>"
+	}
+
+	if err := validation.Validate(&r.CreatedAt,
+		validation.In(string(ASC), string(DESC)),
+	); err != nil {
+		r.CreatedAt = ""
+	}
+
+	return nil
+
 }
 
 func (r *AddMerchantItemRequest) Validate() error {

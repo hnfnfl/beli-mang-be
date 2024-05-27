@@ -40,6 +40,7 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	// merchantGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
 	merchantGroup.POST("", merchantHandler.AddMerchant)
 	merchantGroup.POST(":merchantId/items", merchantHandler.AddMerchantItem)
+	merchantGroup.GET("", merchantHandler.GetMerchants)
 
 	imageGroup := router.Group("/image/")
 	// imageGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))

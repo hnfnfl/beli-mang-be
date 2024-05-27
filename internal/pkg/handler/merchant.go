@@ -6,6 +6,7 @@ import (
 	"beli-mang/internal/pkg/service"
 	"beli-mang/internal/pkg/util"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -52,13 +53,48 @@ func (h *MerchantHandler) AddMerchant(ctx *gin.Context) {
 
 	body.MerchantId = util.UuidGenerator(prefixID, 15)
 
-	merchantID, errs := h.service.InsertMerchant(body)
+	merchant, errs := h.service.InsertMerchant(body)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, dto.AddMerchantResponse{MerchantId: merchantID})
+	ctx.JSON(
+		http.StatusCreated,
+		merchant,
+	)
+}
+
+func (h *MerchantHandler) GetMerchants(ctx *gin.Context) {
+	body := dto.GetMerchantsRequest{}
+	msg, err := util.QueryBinding(ctx, &body)
+	if err != nil {
+		errs.NewValidationError(msg, err).Send(ctx)
+		return
+	}
+
+	body.CreatedAt = strings.ToUpper(body.CreatedAt)
+	body.Name = strings.ToLower(body.Name)
+
+	if body.Limit == 0 {
+		body.Limit = 5
+	}
+
+	if err := body.Validate(); err != nil {
+		errs.NewValidationError("Request validation error", err).Send(ctx)
+		return
+	}
+
+	merchants, errs := h.service.GetMerchants(body)
+	if errs.Code != 0 {
+		errs.Send(ctx)
+		return
+	}
+
+	ctx.JSON(
+		http.StatusOK,
+		merchants,
+	)
 }
 
 func (h *MerchantHandler) AddMerchantItem(ctx *gin.Context) {
@@ -96,7 +132,7 @@ func (h *MerchantHandler) AddMerchantItem(ctx *gin.Context) {
 		return
 	}
 
-	merchantItemID, errs := h.service.InsertMerchantItem(body)
+	item, errs := h.service.InsertMerchantItem(body)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return
@@ -104,6 +140,6 @@ func (h *MerchantHandler) AddMerchantItem(ctx *gin.Context) {
 
 	ctx.JSON(
 		http.StatusCreated,
-		dto.AddMerchantItemResponse{ItemId: merchantItemID},
+		item,
 	)
 }
