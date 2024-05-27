@@ -87,7 +87,21 @@ type GetMerchantsRequest struct {
 
 type GetMerchantsResponse struct {
 	Data []model.Merchant `json:"data"`
-	Meta *errs.Meta       `json:"meta"`
+	Meta *errs.Meta       `json:"meta,omitempty"`
+}
+
+type GetMerchantItemsRequest struct {
+	ItemId          string `form:"itemId"`
+	Limit           int    `form:"limit"`
+	Offset          int    `form:"offset"`
+	Name            string `form:"name"`
+	ProductCategory string `form:"productCategory"`
+	CreatedAt       string `form:"createdAt"`
+}
+
+type GetMerchantItemsResponse struct {
+	Data []model.MerchantItem `json:"data"`
+	Meta *errs.Meta           `json:"meta,omitempty"`
 }
 
 func (r *AddMerchantRequest) Validate() error {
@@ -182,6 +196,32 @@ func (r *AddMerchantItemRequest) Validate() error {
 		),
 	); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (r *GetMerchantItemsRequest) Validate() error {
+	_, err := strconv.Atoi(r.ItemId)
+	if err == nil {
+		return validation.NewError("itemId", "itemId must be a string")
+	}
+
+	_, err = strconv.Atoi(r.Name)
+	if err == nil {
+		return validation.NewError("name", "name must be a string")
+	}
+
+	if err := validation.Validate(&r.ProductCategory,
+		validation.In(ProductCategoryList...),
+	); err != nil {
+		r.ProductCategory = "<invalid>"
+	}
+
+	if err := validation.Validate(&r.CreatedAt,
+		validation.In(string(ASC), string(DESC)),
+	); err != nil {
+		r.CreatedAt = ""
 	}
 
 	return nil
