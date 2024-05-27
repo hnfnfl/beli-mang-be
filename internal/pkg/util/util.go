@@ -38,6 +38,14 @@ func JsonBinding(ctx *gin.Context, in interface{}) (string, error) {
 	return "", nil
 }
 
+func QueryBinding(ctx *gin.Context, in interface{}) (string, error) {
+	if err := ctx.ShouldBindQuery(in); err != nil {
+		return "Query binding error", err
+	}
+
+	return "", nil
+}
+
 func IsValidUrl(in string) bool {
 	u, err := url.ParseRequestURI(in)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
