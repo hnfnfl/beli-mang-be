@@ -33,7 +33,7 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	// orderHandler := NewOrderHandler(service)
 
 	// login
-	authGroup := router.Group("/v1/")
+	authGroup := router.Group("")
 	authGroup.POST("/admin/register", userHandler.Register)
 	authGroup.POST("/admin/login", userHandler.Login)
 	authGroup.POST("/users/register", userHandler.Register)
