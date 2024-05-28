@@ -60,7 +60,7 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 		data.Role = "user"
 	}
 	data.EmailRole = fmt.Sprintf("%s_%s", data.Email, data.Role)
-	h.service.RegisterUser(data).Send(ctx)
+	h.service.RegisterUser(ctx, data).Send(ctx)
 }
 
 func (h *UserHandler) Login(ctx *gin.Context) {
@@ -90,10 +90,10 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	switch role {
 	case "admin":
 		data.Role = "admin"
-		h.service.RegisterUser(data).Send(ctx)
+		h.service.RegisterUser(ctx, data).Send(ctx)
 	case "users":
 		data.Role = "user"
-		h.service.RegisterUser(data).Send(ctx)
+		h.service.RegisterUser(ctx, data).Send(ctx)
 	}
 }
 

@@ -5,27 +5,35 @@ import (
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
 	"beli-mang/internal/pkg/middleware"
+	"fmt"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *Service) RegisterUser(body model.User) errs.Response {
-	var err error
+func (s *Service) RegisterUser(ctx *gin.Context, body model.User) errs.Response {
+	// var err error
 
 	db := s.DB()
 
 	// insert user by role
-	stmt := "INSERT INTO users (username, email, password_hash, role, email_role) VALUES ($1, $2, $3, $4, $5)"
-	if _, err = db.Exec(stmt, body.Username, body.Email, body.PasswordHash, body.Role, body.EmailRole); err != nil {
-		return errs.NewInternalError("insert error", err)
-	}
-
+	// var userName string
+	// var emailRole string
+	stmt := "INSERT INTO users (username, email, password_hash, role, email_role) VALUES ($1, $2, $3, $4, $5) RETURNING username, email_role"
+	_, err := db.Exec(ctx, stmt, body.Username, body.Email, body.PasswordHash, body.Role, body.EmailRole)
+	fmt.Println(err)
+	pgErr, ok := err.(*pgconn.PgError)
+	fmt.Println(pgErr, ok)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok {
 			if pgErr.Code == "23505" {
-				errs.NewGenericError(http.StatusConflict, "user/admin is conflict")
+				if pgErr.ConstraintName == "users_pkey" {
+					return errs.NewGenericError(http.StatusConflict, "user/admin username is conflict")
+				} else if pgErr.ConstraintName == "users_email_role_key" {
+					return errs.NewGenericError(http.StatusConflict, "user/admin email is conflict")
+				}
 			}
 		}
 		return errs.NewInternalError("insert error", err)
@@ -48,7 +56,7 @@ func (s *Service) RegisterUser(body model.User) errs.Response {
 	}
 }
 
-func (s *Service) LoginUser(body model.User) errs.Response {
+func (s *Service) LoginUser(ctx *gin.Context, body model.User) errs.Response {
 	var (
 		err error
 		out model.User
@@ -58,7 +66,7 @@ func (s *Service) LoginUser(body model.User) errs.Response {
 
 	// check NIP in database
 	stmt := "SELECT username, email, password_hash, role, email_role FROM users WHERE username = $1"
-	if err := db.QueryRow(stmt, body.Username).Scan(
+	if err := db.QueryRow(ctx, stmt, body.Username).Scan(
 		&out.Username,
 		&out.Email,
 		&out.PasswordHash,

@@ -5,17 +5,16 @@ import (
 	"beli-mang/internal/pkg/configuration"
 	"beli-mang/internal/pkg/middleware"
 	"beli-mang/internal/pkg/service"
-	"fmt"
+	"context"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
 func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
-	db, err := db.New(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to connect to database: %v", err)
-	}
+	ctx := context.Background()
+	// conn := postgre.GetConn(ctx)
+	db := db.GetConn(cfg, ctx)
 
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -35,9 +34,9 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	// login
 	authGroup := router.Group("")
 	authGroup.POST("/admin/register", userHandler.Register)
-	authGroup.POST("/admin/login", userHandler.Login)
+	authGroup.GET("/admin/login", userHandler.Login)
 	authGroup.POST("/users/register", userHandler.Register)
-	authGroup.POST("/users/login", userHandler.Login)
+	authGroup.GET("/users/login", userHandler.Login)
 
 	merchantGroup := router.Group("/admin/merchants/")
 	merchantGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
