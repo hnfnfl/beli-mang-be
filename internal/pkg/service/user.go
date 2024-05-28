@@ -5,6 +5,7 @@ import (
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
 	"beli-mang/internal/pkg/middleware"
+	"database/sql"
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
@@ -45,7 +46,7 @@ func (s *Service) RegisterUser(body model.User) (*dto.AuthResponse, errs.Respons
 	return &dto.AuthResponse{Token: token}, errs.Response{}
 }
 
-func (s *Service) LoginUser(body model.User) errs.Response {
+func (s *Service) LoginUser(body model.User) (*dto.AuthResponse, errs.Response) {
 	var (
 		err error
 		out model.User
@@ -54,33 +55,31 @@ func (s *Service) LoginUser(body model.User) errs.Response {
 	db := s.DB()
 
 	// check NIP in database
-	stmt := "SELECT username, email, password_hash, role FROM users WHERE username = $1"
-	if err := db.QueryRow(stmt, body.Username).Scan(
+	stmt := "SELECT username, email, password_hash, role FROM users WHERE username = $1 AND role = $2"
+	if err := db.QueryRow(stmt, body.Username, body.Role).Scan(
 		&out.Username,
 		&out.Email,
 		&out.PasswordHash,
 		&out.Role,
 	); err != nil {
-		return errs.NewNotFoundError(errs.ErrUserNotFound)
+		if err == sql.ErrNoRows {
+			return nil, errs.NewNotFoundError(errs.ErrUserNotFound)
+		}
+
+		return nil, errs.NewInternalError("query error", err)
 	}
 
 	//compare password
 	if err := bcrypt.CompareHashAndPassword(out.PasswordHash, body.PasswordHash); err != nil {
-		return errs.NewBadRequestError("password is wrong", err)
+		return nil, errs.NewBadRequestError("password is wrong", err)
 	}
 
 	// generate token
 	var token string
 	token, err = middleware.JWTSign(s.Config(), out.Username, out.Role)
 	if err != nil {
-		return errs.NewInternalError("token signing error", err)
+		return nil, errs.NewInternalError("token signing error", err)
 	}
 
-	return errs.Response{
-		Code:    http.StatusOK,
-		Message: "User login successfully",
-		Data: dto.AuthResponse{
-			Token: token,
-		},
-	}
+	return &dto.AuthResponse{Token: token}, errs.Response{}
 }

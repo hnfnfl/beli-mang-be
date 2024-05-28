@@ -81,15 +81,28 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	data := model.User{
 		Username:     body.Username,
 		PasswordHash: []byte(body.Password + h.service.Config().Salt),
-		Role:         extractRole(ctx.FullPath()),
+	}
+	role := extractRole(ctx.FullPath())
+
+	var (
+		token *dto.AuthResponse
+		errs  errs.Response
+	)
+	switch role {
+	case "admin":
+		data.Role = "admin"
+		token, errs = h.service.LoginUser(data)
+	case "users":
+		data.Role = "user"
+		token, errs = h.service.LoginUser(data)
 	}
 
-	switch data.Role {
-	case "admin":
-		h.service.LoginUser(data).Send(ctx)
-	case "users":
-		h.service.LoginUser(data).Send(ctx)
+	if errs.Code != 0 {
+		errs.Send(ctx)
+		return
 	}
+
+	ctx.JSON(http.StatusOK, token)
 }
 
 func extractRole(path string) string {
