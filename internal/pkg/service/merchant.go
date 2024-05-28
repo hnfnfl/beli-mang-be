@@ -216,37 +216,10 @@ func (s *Service) GetMerchantItems(data dto.GetMerchantItemsRequest) (*dto.GetMe
 	}
 }
 
-func haversine(lat1, lon1, lat2, lon2 float64) float64 {
-	const R = 6371 // Earth radius in kilometers
-
-	// Convert degrees to radians
-	lat1 = degreesToRadians(lat1)
-	lon1 = degreesToRadians(lon1)
-	lat2 = degreesToRadians(lat2)
-	lon2 = degreesToRadians(lon2)
-
-	// Haversine formula
-	dlat := lat2 - lat1
-	dlon := lon2 - lon1
-
-	a := math.Sin(dlat/2)*math.Sin(dlat/2) + math.Cos(lat1)*math.Cos(lat2)*math.Sin(dlon/2)*math.Sin(dlon/2)
-	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-
-	// Distance in kilometers
-	distance := R * c
-
-	return distance
-}
-
-func degreesToRadians(degrees float64) float64 {
-	return degrees * math.Pi / 180
-}
-
 func (s *Service) GetNearbyMerchants(data dto.GetNearbyMerchantsRequest) (*dto.GetNearbyMerchantsResponse, errs.Response) {
 	db := s.DB()
 	var (
-		stmt strings.Builder
-		// stmtMI strings.Builder
+		stmt   strings.Builder
 		result dto.GetNearbyMerchantsResponse
 	)
 
@@ -258,7 +231,7 @@ func (s *Service) GetNearbyMerchants(data dto.GetNearbyMerchantsRequest) (*dto.G
 	userLong := data.Long
 
 	// get nearby merchants
-	stmt.WriteString(fmt.Sprintf("SELECT * FROM merchants WHERE 1=1"))
+	stmt.WriteString("SELECT * FROM merchants WHERE 1=1")
 
 	if data.MerchantId != "" {
 		stmt.WriteString(fmt.Sprintf("AND merchant_id = '%s' ", data.MerchantId))
@@ -274,7 +247,6 @@ func (s *Service) GetNearbyMerchants(data dto.GetNearbyMerchantsRequest) (*dto.G
 		stmt.WriteString(fmt.Sprintf("AND merchant_categories = '%s' ", data.MerchantCategory))
 	}
 
-	//stmt.WriteString(fmt.Sprintf(" ORDER BY distance ASC LIMIT %d OFFSET %d", data.Limit, data.Offset))
 	stmt.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", data.Limit, data.Offset))
 
 	rows, err := db.Query(stmt.String())
@@ -288,7 +260,8 @@ func (s *Service) GetNearbyMerchants(data dto.GetNearbyMerchantsRequest) (*dto.G
 			merchant  model.Merchant
 			createdAt time.Time
 		)
-		err := rows.Scan(
+
+		if err := rows.Scan(
 			&merchant.MerchantId,
 			&merchant.Name,
 			&merchant.MerchantCategory,
@@ -296,19 +269,20 @@ func (s *Service) GetNearbyMerchants(data dto.GetNearbyMerchantsRequest) (*dto.G
 			&merchant.Location.Lat,
 			&merchant.ImageUrl,
 			&createdAt,
-		)
-		merchant.Distance = haversine(userLat, userLong, merchant.Location.Lat, merchant.Location.Long)
-		if err != nil {
+		); err != nil {
 			return nil, errs.NewInternalError("Failed to scan nearby merchants", err)
 		}
 
+		merchant.Distance = haversine(userLat, userLong, merchant.Location.Lat, merchant.Location.Long)
 		merchant.CreatedAt = createdAt.Format(time.RFC3339Nano)
 
 		result.Data.Merchant = append(result.Data.Merchant, merchant)
 	}
+
 	sort.Slice(result.Data.Merchant, func(i, j int) bool {
 		return result.Data.Merchant[i].Distance < result.Data.Merchant[j].Distance
 	})
+
 	if len(result.Data.Merchant) == 0 {
 		return &result, errs.Response{}
 	}
@@ -353,6 +327,30 @@ func (s *Service) GetNearbyMerchants(data dto.GetNearbyMerchantsRequest) (*dto.G
 	}
 
 	return &result, errs.Response{}
+}
+
+func haversine(lat1, lon1, lat2, lon2 float64) float64 {
+	const R = 6371 // Earth radius in kilometers
+
+	// Convert degrees to radians
+	lat1 = degreesToRadians(lat1)
+	lon1 = degreesToRadians(lon1)
+	lat2 = degreesToRadians(lat2)
+	lon2 = degreesToRadians(lon2)
+
+	// Haversine formula
+	dlat := lat2 - lat1
+	dlon := lon2 - lon1
+
+	a := math.Sin(dlat/2)*math.Sin(dlat/2) + math.Cos(lat1)*math.Cos(lat2)*math.Sin(dlon/2)*math.Sin(dlon/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+
+	// Distance in kilometers
+	return R * c
+}
+
+func degreesToRadians(degrees float64) float64 {
+	return degrees * math.Pi / 180
 }
 
 // TODO: check if this implementation is correct
