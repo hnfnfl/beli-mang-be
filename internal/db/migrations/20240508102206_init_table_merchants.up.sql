@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 CREATE TYPE merchant_category AS ENUM (
     'SmallRestaurant',
     'MediumRestaurant',
@@ -7,9 +6,6 @@ CREATE TYPE merchant_category AS ENUM (
     'BoothKiosk',
     'ConvenienceStore'
 );
-=======
-CREATE TYPE IF NOT EXISTS merchant_category AS ENUM ('SmallRestaurant', 'MediumRestaurant', 'LargeRestaurant', 'MerchandiseRestaurant', 'BoothKiosk', 'ConvenienceStore');
->>>>>>> Stashed changes
 
 CREATE TABLE IF NOT EXISTS merchants (
     merchant_id VARCHAR(30) PRIMARY KEY NOT NULL,
