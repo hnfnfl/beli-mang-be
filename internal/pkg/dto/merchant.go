@@ -22,11 +22,11 @@ const (
 	BoothKiosk            MerchantCategory = "BoothKiosk"
 	ConvenienceStore      MerchantCategory = "ConvenienceStore"
 
-	Beverage  ProductCategory = "Beverage"
-	Food      ProductCategory = "Food"
-	Snack     ProductCategory = "Snack"
-	Condiment ProductCategory = "Condiment"
-	Additions ProductCategory = "Additions"
+	Beverage   ProductCategory = "Beverage"
+	Food       ProductCategory = "Food"
+	Snack      ProductCategory = "Snack"
+	Condiments ProductCategory = "Condiments"
+	Additions  ProductCategory = "Additions"
 )
 
 var MerchantCategoryList = []interface{}{
@@ -42,7 +42,7 @@ var ProductCategoryList = []interface{}{
 	string(Beverage),
 	string(Food),
 	string(Snack),
-	string(Condiment),
+	string(Condiments),
 	string(Additions),
 }
 
@@ -103,6 +103,23 @@ type GetMerchantItemsRequest struct {
 type GetMerchantItemsResponse struct {
 	Data []model.MerchantItem `json:"data"`
 	Meta *errs.Meta           `json:"meta,omitempty"`
+}
+
+type GetNearbyMerchantsRequest struct {
+	Lat              float64
+	Long             float64
+	MerchantId       string `form:"merchantId"`
+	Limit            int    `form:"limit"`
+	Offset           int    `form:"offset"`
+	Name             string `form:"name"`
+	MerchantCategory string `form:"merchantCategory"`
+}
+
+type GetNearbyMerchantsResponse struct {
+	Data struct {
+		Merchant []model.Merchant     `json:"merchant"`
+		Items    []model.MerchantItem `json:"items"`
+	} `json:"data"`
 }
 
 func (r *AddMerchantRequest) Validate() error {
@@ -223,6 +240,35 @@ func (r *GetMerchantItemsRequest) Validate() error {
 		validation.In(string(ASC), string(DESC)),
 	); err != nil {
 		r.CreatedAt = ""
+	}
+
+	return nil
+}
+
+func (r *GetNearbyMerchantsRequest) Validate() error {
+	_, err := strconv.Atoi(r.MerchantId)
+	if err == nil {
+		return validation.NewError("merchantId", "merchantId must be a number")
+	}
+
+	_, err = strconv.Atoi(r.Name)
+	if err == nil {
+		return validation.NewError("name", "name must be a string")
+	}
+
+	if err := validation.Validate(&r.MerchantCategory,
+		validation.In(MerchantCategoryList...),
+	); err != nil {
+		r.MerchantCategory = "<invalid>"
+	}
+
+	// validate lat and long
+	if r.Lat < -90 || r.Lat > 90 {
+		return validation.NewError("lat", "latitude must be between -90 and 90")
+	}
+
+	if r.Long < -180 || r.Long > 180 {
+		return validation.NewError("long", "longitude must be between -180 and 180")
 	}
 
 	return nil

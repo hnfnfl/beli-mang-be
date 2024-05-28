@@ -5,6 +5,7 @@ import (
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -212,4 +213,140 @@ func (s *Service) GetMerchantItems(data dto.GetMerchantItemsRequest) (*dto.GetMe
 
 		return &items, errs.Response{}
 	}
+}
+
+func (s *Service) GetNearbyMerchants(data dto.GetNearbyMerchantsRequest) (*dto.GetNearbyMerchantsResponse, errs.Response) {
+	db := s.DB()
+	var (
+		stmt strings.Builder
+		// stmtMI strings.Builder
+		result dto.GetNearbyMerchantsResponse
+	)
+
+	// set default value
+	result.Data.Merchant = make([]model.Merchant, 0)
+	result.Data.Items = make([]model.MerchantItem, 0)
+
+	userLat := data.Lat
+	userLong := data.Long
+
+	// get nearby merchants
+	stmt.WriteString(fmt.Sprintf("SELECT *, haversine(%v, %v, lat, long) AS distance FROM merchants WHERE 1=1 ", userLat, userLong))
+
+	if data.MerchantId != "" {
+		stmt.WriteString(fmt.Sprintf("AND merchant_id = '%s' ", data.MerchantId))
+	}
+
+	if data.Name != "" {
+		stmt.WriteString(fmt.Sprintf("AND name LIKE '%%%s%%' ", data.Name))
+	}
+
+	if data.MerchantCategory == "<invalid>" {
+		return &result, errs.Response{}
+	} else if data.MerchantCategory != "" {
+		stmt.WriteString(fmt.Sprintf("AND merchant_categories = '%s' ", data.MerchantCategory))
+	}
+
+	stmt.WriteString(fmt.Sprintf(" ORDER BY distance ASC LIMIT %d OFFSET %d", data.Limit, data.Offset))
+
+	rows, err := db.Query(stmt.String())
+	if err != nil {
+		return nil, errs.NewInternalError("Failed to get nearby merchants", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			merchant  model.Merchant
+			createdAt time.Time
+		)
+		if err := rows.Scan(
+			&merchant.MerchantId,
+			&merchant.Name,
+			&merchant.MerchantCategory,
+			&merchant.Location.Long,
+			&merchant.Location.Lat,
+			&merchant.ImageUrl,
+			&createdAt,
+			&merchant.Distance,
+		); err != nil {
+			return nil, errs.NewInternalError("Failed to scan nearby merchants", err)
+		}
+
+		merchant.CreatedAt = createdAt.Format(time.RFC3339Nano)
+
+		result.Data.Merchant = append(result.Data.Merchant, merchant)
+	}
+
+	if len(result.Data.Merchant) == 0 {
+		return &result, errs.Response{}
+	}
+
+	tsp := tsp(result.Data.Merchant)
+	result.Data.Merchant = tsp
+
+	// get merchant items
+	if data.Name != "" {
+		stmt.Reset()
+		stmt.WriteString("SELECT item_id, name, product_categories, price, image_url, created_at FROM merchant_items WHERE 1=1 ")
+
+		stmt.WriteString(fmt.Sprintf("AND name LIKE '%%%s%%' ", data.Name))
+
+		stmt.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", data.Limit, data.Offset))
+
+		rows, err = db.Query(stmt.String())
+		if err != nil {
+			return nil, errs.NewInternalError("Failed to get merchant items", err)
+		}
+
+		for rows.Next() {
+			var (
+				item      model.MerchantItem
+				createdAt time.Time
+			)
+			if err := rows.Scan(
+				&item.ItemId,
+				&item.Name,
+				&item.ProductCategory,
+				&item.Price,
+				&item.ImageUrl,
+				&createdAt,
+			); err != nil {
+				return nil, errs.NewInternalError("Failed to scan merchant items", err)
+			}
+
+			item.CreatedAt = createdAt.Format(time.RFC3339Nano)
+
+			result.Data.Items = append(result.Data.Items, item)
+		}
+	}
+
+	return &result, errs.Response{}
+}
+
+// TODO: check if this implementation is correct
+func tsp(merchants []model.Merchant) []model.Merchant {
+	visited := make([]bool, len(merchants))
+	route := make([]model.Merchant, 0, len(merchants))
+	current := merchants[0]
+	visited[0] = true
+	route = append(route, current)
+
+	for len(route) < len(merchants) {
+		nearest := -1
+		nearestDist := math.MaxFloat64
+		for i, m := range merchants {
+			if !visited[i] {
+				dist := m.Distance
+				if dist < nearestDist {
+					nearestDist = dist
+					nearest = i
+				}
+			}
+		}
+		visited[nearest] = true
+		current = merchants[nearest]
+		route = append(route, current)
+	}
+	return route
 }
