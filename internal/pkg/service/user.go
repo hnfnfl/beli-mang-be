@@ -33,16 +33,14 @@ func (s *Service) RegisterUser(body model.User) errs.Response {
 
 	// generate token
 	var token string
-	if body.Role == "it" {
-		token, err = middleware.JWTSign(s.Config(), body.Username, body.Role)
-		if err != nil {
-			return errs.NewInternalError("token signing error", err)
-		}
+	token, err = middleware.JWTSign(s.Config(), body.Username, body.Role)
+	if err != nil {
+		return errs.NewInternalError("token signing error", err)
 	}
 
 	// TODO: Implement this method
 	return errs.Response{
-		Code:    http.StatusOK,
+		Code:    http.StatusCreated,
 		Message: "User registered successfully",
 		Data: dto.AuthResponse{
 			Token: token,
