@@ -63,7 +63,7 @@ func (s *Service) LoginUser(body model.User) (*dto.AuthResponse, errs.Response) 
 		&out.Role,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errs.NewNotFoundError(errs.ErrUserNotFound)
+			return nil, errs.NewValidationError("credential does not match with any user", errs.ErrUnauthorized)
 		}
 
 		return nil, errs.NewInternalError("query error", err)

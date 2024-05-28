@@ -36,9 +36,9 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	// login
 	authGroup := router.Group("")
 	authGroup.POST("/admin/register", userHandler.Register)
-	authGroup.GET("/admin/login", userHandler.Login)
+	authGroup.POST("/admin/login", userHandler.Login)
 	authGroup.POST("/users/register", userHandler.Register)
-	authGroup.GET("/users/login", userHandler.Login)
+	authGroup.POST("/users/login", userHandler.Login)
 
 	merchantGroup := router.Group("/admin/merchants/")
 	merchantGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
@@ -51,7 +51,7 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	purchaseGroup.GET("/merchants/nearby/:latlong", merchantHandler.NearbyMerchant)
 
 	imageGroup := router.Group("/image/")
-	// imageGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
+	imageGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
 	imageGroup.POST("", imageHandler.UploadImage)
 
 	return router.Run(":8080")
