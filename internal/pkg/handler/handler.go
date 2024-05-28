@@ -3,6 +3,7 @@ package handler
 import (
 	"beli-mang/internal/db"
 	"beli-mang/internal/pkg/configuration"
+	"beli-mang/internal/pkg/middleware"
 	"beli-mang/internal/pkg/service"
 	"fmt"
 
@@ -26,19 +27,21 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	})
 
 	service := service.NewService(cfg, db)
-	// userHandler := NewUserHandler(service)
+	userHandler := NewUserHandler(service)
 	merchantHandler := NewMerchantHandler(service)
 	imageHandler := NewImageHandler(service)
 	// purchaseHandler := NewPurchaseHandler(service)
+	// orderHandler := NewOrderHandler(service)
 
 	// login
-	// authGroup := router.Group("/v1/user/")
-	// authGroup.POST("it/register", userHandler.Register)
-	// authGroup.POST("it/login", userHandler.Login)
-	// authGroup.POST("nurse/login", userHandler.Login)
+	authGroup := router.Group("")
+	authGroup.POST("/admin/register", userHandler.Register)
+	authGroup.GET("/admin/login", userHandler.Login)
+	authGroup.POST("/users/register", userHandler.Register)
+	authGroup.GET("/users/login", userHandler.Login)
 
 	merchantGroup := router.Group("/admin/merchants/")
-	// merchantGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
+	merchantGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
 	merchantGroup.POST("", merchantHandler.AddMerchant)
 	merchantGroup.GET("", merchantHandler.GetMerchants)
 	merchantGroup.POST(":merchantId/items", merchantHandler.AddMerchantItem)

@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"beli-mang/internal/db/model"
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
+	"beli-mang/internal/pkg/middleware"
 	"beli-mang/internal/pkg/service"
 	"beli-mang/internal/pkg/util"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -32,18 +35,33 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	// data := model.User{
-	// }
+	passHash, err := middleware.PasswordHash(body.Password, h.service.Config().Salt)
+	if err != nil {
+		errs.NewInternalError("hashing error", err).Send(ctx)
+		return
+	}
 
-	// var passHash []byte
-	// if body.Password != "" {
-	// 	var err error
-	// 	passHash, err = middleware.PasswordHash(body.Password, h.service.Config().Salt)
-	// 	if err != nil {
-	// 		errs.NewInternalError("hashing error", err).Send(ctx)
-	// 		return
-	// 	}
-	// }
+	data := model.User{
+		Username:     body.Username,
+		Email:        body.Email,
+		PasswordHash: passHash,
+	}
+
+	role := extractRole(ctx.FullPath())
+	switch role {
+	case "admin":
+		data.Role = "admin"
+	case "users":
+		data.Role = "user"
+	}
+
+	token, errs := h.service.RegisterUser(data)
+	if errs.Code != 0 {
+		errs.Send(ctx)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, token)
 }
 
 func (h *UserHandler) Login(ctx *gin.Context) {
@@ -54,13 +72,44 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	// h.service.LoginUser(data).Send(ctx)
+	// validate Request
+	if err := body.Validate(); err != nil {
+		errs.NewValidationError("Request validation error", err).Send(ctx)
+		return
+	}
+
+	data := model.User{
+		Username:     body.Username,
+		PasswordHash: []byte(body.Password + h.service.Config().Salt),
+	}
+	role := extractRole(ctx.FullPath())
+
+	var (
+		token *dto.AuthResponse
+		errs  errs.Response
+	)
+	switch role {
+	case "admin":
+		data.Role = "admin"
+		token, errs = h.service.LoginUser(data)
+	case "users":
+		data.Role = "user"
+		token, errs = h.service.LoginUser(data)
+	}
+
+	if errs.Code != 0 {
+		errs.Send(ctx)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, token)
 }
 
 func extractRole(path string) string {
 	parts := strings.Split(path, "/")
-	if len(parts) >= 4 {
-		return parts[3]
+	if len(parts) >= 2 {
+		return parts[1]
 	}
+
 	return ""
 }
