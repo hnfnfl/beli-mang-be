@@ -7,7 +7,7 @@ import (
 	"beli-mang/internal/pkg/middleware"
 	"beli-mang/internal/pkg/service"
 	"beli-mang/internal/pkg/util"
-	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -35,32 +35,33 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	data := model.User{
-		Username: body.Username,
-		Email:    body.Email,
+	passHash, err := middleware.PasswordHash(body.Password, h.service.Config().Salt)
+	if err != nil {
+		errs.NewInternalError("hashing error", err).Send(ctx)
+		return
 	}
 
-	var passHash []byte
-	if body.Password != "" {
-		var err error
-		passHash, err = middleware.PasswordHash(body.Password, h.service.Config().Salt)
-		if err != nil {
-			errs.NewInternalError("hashing error", err).Send(ctx)
-			return
-		}
+	data := model.User{
+		Username:     body.Username,
+		Email:        body.Email,
+		PasswordHash: passHash,
 	}
 
 	role := extractRole(ctx.FullPath())
-	data.PasswordHash = passHash
-
 	switch role {
 	case "admin":
 		data.Role = "admin"
 	case "users":
 		data.Role = "user"
 	}
-	data.EmailRole = fmt.Sprintf("%s_%s", data.Email, data.Role)
-	h.service.RegisterUser(data).Send(ctx)
+
+	token, errs := h.service.RegisterUser(data)
+	if errs.Code != 0 {
+		errs.Send(ctx)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, token)
 }
 
 func (h *UserHandler) Login(ctx *gin.Context) {
@@ -78,23 +79,30 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	}
 
 	data := model.User{
-		Username: body.Username,
+		Username:     body.Username,
+		PasswordHash: []byte(body.Password + h.service.Config().Salt),
 	}
-
-	if body.Password != "" {
-		data.PasswordHash = []byte(body.Password + h.service.Config().Salt)
-	}
-
 	role := extractRole(ctx.FullPath())
 
+	var (
+		token *dto.AuthResponse
+		errs  errs.Response
+	)
 	switch role {
 	case "admin":
 		data.Role = "admin"
-		h.service.RegisterUser(data).Send(ctx)
+		token, errs = h.service.LoginUser(data)
 	case "users":
 		data.Role = "user"
-		h.service.RegisterUser(data).Send(ctx)
+		token, errs = h.service.LoginUser(data)
 	}
+
+	if errs.Code != 0 {
+		errs.Send(ctx)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, token)
 }
 
 func extractRole(path string) string {
@@ -102,5 +110,6 @@ func extractRole(path string) string {
 	if len(parts) >= 2 {
 		return parts[1]
 	}
+
 	return ""
 }

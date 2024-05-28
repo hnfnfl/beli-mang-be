@@ -5,8 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(30) NOT NULL,
     password_hash VARCHAR(255) NOT null,
     role role_user,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    email_role VARCHAR(35) UNIQUE NOT NULL
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_username on users(username);
