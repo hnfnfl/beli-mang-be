@@ -99,8 +99,8 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 
 func extractRole(path string) string {
 	parts := strings.Split(path, "/")
-	if len(parts) >= 4 {
-		return parts[3]
+	if len(parts) >= 2 {
+		return parts[1]
 	}
 	return ""
 }
