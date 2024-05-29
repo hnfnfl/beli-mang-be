@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -54,4 +55,13 @@ func IsValidUrl(in string) bool {
 
 	re := regexp.MustCompile(`\.(jpg|jpeg)$`)
 	return re.MatchString(u.Path)
+}
+
+func ExtractRole(path string) string {
+	parts := strings.Split(path, "/")
+	if len(parts) >= 2 {
+		return parts[1]
+	}
+
+	return ""
 }

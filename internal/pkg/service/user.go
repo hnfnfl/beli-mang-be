@@ -2,6 +2,7 @@ package service
 
 import (
 	"beli-mang/internal/db/model"
+	"beli-mang/internal/pkg/configuration"
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
 	"beli-mang/internal/pkg/middleware"
@@ -13,14 +14,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *Service) RegisterUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response) {
-	// var err error
-
+func (s *Service) RegisterUser(ctx *gin.Context, body model.User, cfg configuration.Configuration) (*dto.AuthResponse, errs.Response) {
 	db := s.DB()
 
 	// insert user by role
-	// var userName string
-	// var emailRole string
 	stmt := "INSERT INTO users (username, email, password_hash, role, email_role) VALUES ($1, $2, $3, $4, $5) RETURNING username, email_role"
 	_, err := db.Exec(ctx, stmt, body.Username, body.Email, body.PasswordHash, body.Role, body.EmailRole)
 	fmt.Println(err)
@@ -41,7 +38,7 @@ func (s *Service) RegisterUser(ctx *gin.Context, body model.User) (*dto.AuthResp
 
 	// generate token
 	var token string
-	token, err = middleware.JWTSign(s.Config(), body.Username, body.Role)
+	token, err = middleware.JWTSign(&cfg, body.Username, body.Role)
 	if err != nil {
 		return nil, errs.NewInternalError("token signing error", err)
 	}
@@ -49,7 +46,7 @@ func (s *Service) RegisterUser(ctx *gin.Context, body model.User) (*dto.AuthResp
 	return &dto.AuthResponse{Token: token}, errs.Response{}
 }
 
-func (s *Service) LoginUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response) {
+func (s *Service) LoginUser(ctx *gin.Context, body model.User, cfg configuration.Configuration) (*dto.AuthResponse, errs.Response) {
 	var (
 		err error
 		out model.User
@@ -76,7 +73,7 @@ func (s *Service) LoginUser(ctx *gin.Context, body model.User) (*dto.AuthRespons
 
 	// generate token
 	var token string
-	token, err = middleware.JWTSign(s.Config(), out.Username, out.Role)
+	token, err = middleware.JWTSign(&cfg, out.Username, out.Role)
 	if err != nil {
 		return nil, errs.NewInternalError("token signing error", err)
 	}

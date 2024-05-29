@@ -1,9 +1,8 @@
-package handler
+package image
 
 import (
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
-	"beli-mang/internal/pkg/service"
 	"fmt"
 	"path/filepath"
 
@@ -11,15 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type ImageHandler struct {
-	*service.Service
-}
-
-func NewImageHandler(s *service.Service) *ImageHandler {
-	return &ImageHandler{s}
-}
-
-// UploadImage to s3 bucket
 func (h *ImageHandler) UploadImage(ctx *gin.Context) {
 	file, err := ctx.FormFile("file")
 	if err != nil {
@@ -41,5 +31,5 @@ func (h *ImageHandler) UploadImage(ctx *gin.Context) {
 	file.Filename = fmt.Sprintf("%s%s", uuid, filepath.Ext(file.Filename))
 
 	// If the file passes all checks, you can continue with your processing
-	h.UploadImageProcess(ctx, file).Send(ctx)
+	h.service.UploadImageProcess(ctx, file, h.handler.Config()).Send(ctx)
 }
