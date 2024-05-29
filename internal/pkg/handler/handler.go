@@ -46,6 +46,7 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 
 	orderGroup := router.Group("")
 	orderGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "user"))
+	orderGroup.POST("/merchants/nearby/:latlong", merchantHandler.NearbyMerchant)
 	orderGroup.POST("", orderHandler.EstimateOrder)
 
 	imageGroup := router.Group("/image/")
