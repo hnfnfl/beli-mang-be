@@ -7,7 +7,7 @@ DB:
   Port: 5432
   Host: localhost
   Username: postgres
-  Password: rahasia
+  Password: admin
   Params: sslmode=disable
   MaxIdleConns: 20
   MaxOpenConns: 20
