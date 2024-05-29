@@ -7,6 +7,7 @@ type Merchant struct {
 	ImageUrl         string   `json:"image_url"`
 	Location         Location `json:"location"`
 	CreatedAt        string   `json:"created_at"`
+	Distance         float64  `json:"distance,omitempty"`
 }
 
 type Location struct {

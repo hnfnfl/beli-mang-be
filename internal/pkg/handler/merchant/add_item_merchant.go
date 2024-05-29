@@ -27,7 +27,7 @@ func (h *MerchantHandler) AddMerchantItem(ctx *gin.Context) {
 		prefixID = "F"
 	case string(dto.Snack):
 		prefixID = "S"
-	case string(dto.Condiment):
+	case string(dto.Condiments):
 		prefixID = "C"
 	case string(dto.Additions):
 		prefixID = "A"
