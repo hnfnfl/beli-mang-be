@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *Service) RegisterUser(ctx *gin.Context, body model.User) errs.Response {
+func (s *Service) RegisterUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response) {
 	// var err error
 
 	db := s.DB()
@@ -30,33 +30,26 @@ func (s *Service) RegisterUser(ctx *gin.Context, body model.User) errs.Response 
 		if pgErr, ok := err.(*pgconn.PgError); ok {
 			if pgErr.Code == "23505" {
 				if pgErr.ConstraintName == "users_pkey" {
-					return errs.NewGenericError(http.StatusConflict, "user/admin username is conflict")
+					return nil, errs.NewGenericError(http.StatusConflict, "user/admin username is conflict")
 				} else if pgErr.ConstraintName == "users_email_role_key" {
-					return errs.NewGenericError(http.StatusConflict, "user/admin email is conflict")
+					return nil, errs.NewGenericError(http.StatusConflict, "user/admin email is conflict")
 				}
 			}
 		}
-		return errs.NewInternalError("insert error", err)
+		return nil, errs.NewInternalError("insert error", err)
 	}
 
 	// generate token
 	var token string
 	token, err = middleware.JWTSign(s.Config(), body.Username, body.Role)
 	if err != nil {
-		return errs.NewInternalError("token signing error", err)
+		return nil, errs.NewInternalError("token signing error", err)
 	}
 
-	// TODO: Implement this method
-	return errs.Response{
-		Code:    http.StatusCreated,
-		Message: "User registered successfully",
-		Data: dto.AuthResponse{
-			Token: token,
-		},
-	}
+	return &dto.AuthResponse{Token: token}, errs.Response{}
 }
 
-func (s *Service) LoginUser(ctx *gin.Context, body model.User) errs.Response {
+func (s *Service) LoginUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response) {
 	var (
 		err error
 		out model.User
@@ -73,26 +66,20 @@ func (s *Service) LoginUser(ctx *gin.Context, body model.User) errs.Response {
 		&out.Role,
 		&out.EmailRole,
 	); err != nil {
-		return errs.NewNotFoundError(errs.ErrUserNotFound)
+		return nil, errs.NewNotFoundError(errs.ErrUserNotFound)
 	}
 
 	//compare password
 	if err := bcrypt.CompareHashAndPassword(out.PasswordHash, body.PasswordHash); err != nil {
-		return errs.NewBadRequestError("password is wrong", err)
+		return nil, errs.NewBadRequestError("password is wrong", err)
 	}
 
 	// generate token
 	var token string
 	token, err = middleware.JWTSign(s.Config(), out.Username, out.Role)
 	if err != nil {
-		return errs.NewInternalError("token signing error", err)
+		return nil, errs.NewInternalError("token signing error", err)
 	}
 
-	return errs.Response{
-		Code:    http.StatusOK,
-		Message: "User login successfully",
-		Data: dto.AuthResponse{
-			Token: token,
-		},
-	}
+	return &dto.AuthResponse{Token: token}, errs.Response{}
 }

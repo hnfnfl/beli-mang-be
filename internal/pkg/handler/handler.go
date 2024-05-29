@@ -13,7 +13,6 @@ import (
 
 func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	ctx := context.Background()
-	// conn := postgre.GetConn(ctx)
 	db := db.GetConn(cfg, ctx)
 
 	if cfg.Environment == "production" {

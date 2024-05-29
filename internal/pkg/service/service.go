@@ -8,8 +8,7 @@ import (
 
 type Service struct {
 	cfg *configuration.Configuration
-	// db  *sql.DB
-	db *pgxpool.Pool
+	db  *pgxpool.Pool
 }
 
 func NewService(cfg *configuration.Configuration, db *pgxpool.Pool) *Service {
