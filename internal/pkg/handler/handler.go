@@ -5,17 +5,15 @@ import (
 	"beli-mang/internal/pkg/configuration"
 	"beli-mang/internal/pkg/middleware"
 	"beli-mang/internal/pkg/service"
-	"fmt"
+	"context"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
 func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
-	db, err := db.New(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to connect to database: %v", err)
-	}
+	ctx := context.Background()
+	db := db.GetConn(cfg, ctx)
 
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)

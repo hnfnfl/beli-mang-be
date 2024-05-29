@@ -7,6 +7,7 @@ import (
 	"beli-mang/internal/pkg/middleware"
 	"beli-mang/internal/pkg/service"
 	"beli-mang/internal/pkg/util"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -40,7 +41,6 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 		errs.NewInternalError("hashing error", err).Send(ctx)
 		return
 	}
-
 	data := model.User{
 		Username:     body.Username,
 		Email:        body.Email,
@@ -54,8 +54,8 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 	case "users":
 		data.Role = "user"
 	}
-
-	token, errs := h.service.RegisterUser(data)
+	data.EmailRole = fmt.Sprintf("%s_%s", data.Email, data.Role)
+	token, errs := h.service.RegisterUser(ctx, data)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return
@@ -91,17 +91,15 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	switch role {
 	case "admin":
 		data.Role = "admin"
-		token, errs = h.service.LoginUser(data)
 	case "users":
 		data.Role = "user"
-		token, errs = h.service.LoginUser(data)
 	}
 
+	token, errs = h.service.LoginUser(ctx, data)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return
 	}
-
 	ctx.JSON(http.StatusOK, token)
 }
 

@@ -2,22 +2,23 @@ package service
 
 import (
 	"beli-mang/internal/pkg/configuration"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Service struct {
 	cfg *configuration.Configuration
-	db  *sql.DB
+	db  *pgxpool.Pool
 }
 
-func NewService(cfg *configuration.Configuration, db *sql.DB) *Service {
+func NewService(cfg *configuration.Configuration, db *pgxpool.Pool) *Service {
 	return &Service{
 		cfg: cfg,
 		db:  db,
 	}
 }
 
-func (s *Service) DB() *sql.DB {
+func (s *Service) DB() *pgxpool.Pool {
 	return s.db
 }
 

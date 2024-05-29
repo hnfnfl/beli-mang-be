@@ -53,7 +53,7 @@ func (h *MerchantHandler) AddMerchant(ctx *gin.Context) {
 
 	body.MerchantId = util.UuidGenerator(prefixID, 15)
 
-	merchant, errs := h.service.InsertMerchant(body)
+	merchant, errs := h.service.InsertMerchant(ctx, body)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return
@@ -85,7 +85,7 @@ func (h *MerchantHandler) GetMerchants(ctx *gin.Context) {
 		return
 	}
 
-	merchants, errs := h.service.GetMerchants(body)
+	merchants, errs := h.service.GetMerchants(ctx, body)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return
@@ -132,7 +132,7 @@ func (h *MerchantHandler) AddMerchantItem(ctx *gin.Context) {
 		return
 	}
 
-	item, errs := h.service.InsertMerchantItem(body)
+	item, errs := h.service.InsertMerchantItem(ctx, body)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return
@@ -165,7 +165,7 @@ func (h *MerchantHandler) GetMerchantItems(ctx *gin.Context) {
 		return
 	}
 
-	items, errs := h.service.GetMerchantItems(body)
+	items, errs := h.service.GetMerchantItems(ctx, body)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return

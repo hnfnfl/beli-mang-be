@@ -7,15 +7,17 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-func (s *Service) InsertMerchant(data dto.AddMerchantRequest) (*dto.AddMerchantResponse, errs.Response) {
+func (s *Service) InsertMerchant(ctx *gin.Context, data dto.AddMerchantRequest) (*dto.AddMerchantResponse, errs.Response) {
 	db := s.DB()
 	var merchant model.Merchant
 
 	stmt := `INSERT INTO merchants (merchant_id, "name", merchant_categories, long, lat, image_url) VALUES($1, $2, $3, $4, $5, $6) RETURNING merchant_id`
 
-	merchantId := db.QueryRow(stmt, data.MerchantId, data.Name, data.MerchantCategory, data.Location.Long, data.Location.Lat, data.ImageUrl)
+	merchantId := db.QueryRow(ctx, stmt, data.MerchantId, data.Name, data.MerchantCategory, data.Location.Long, data.Location.Lat, data.ImageUrl)
 	if err := merchantId.Scan(&merchant.MerchantId); err != nil {
 		return nil, errs.NewInternalError("Failed to insert merchant", err)
 	}
@@ -26,7 +28,7 @@ func (s *Service) InsertMerchant(data dto.AddMerchantRequest) (*dto.AddMerchantR
 		errs.Response{}
 }
 
-func (s *Service) GetMerchants(data dto.GetMerchantsRequest) (*dto.GetMerchantsResponse, errs.Response) {
+func (s *Service) GetMerchants(ctx *gin.Context, data dto.GetMerchantsRequest) (*dto.GetMerchantsResponse, errs.Response) {
 	db := s.DB()
 	var (
 		stmt      strings.Builder
@@ -63,7 +65,7 @@ func (s *Service) GetMerchants(data dto.GetMerchantsRequest) (*dto.GetMerchantsR
 
 	stmt.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", data.Limit, data.Offset))
 
-	rows, err := db.Query(stmt.String())
+	rows, err := db.Query(ctx, stmt.String())
 	if err != nil {
 		return nil, errs.NewInternalError("Failed to get merchants", err)
 	}
@@ -105,21 +107,21 @@ func (s *Service) GetMerchants(data dto.GetMerchantsRequest) (*dto.GetMerchantsR
 	}
 }
 
-func (s *Service) InsertMerchantItem(data dto.AddMerchantItemRequest) (*dto.AddMerchantItemResponse, errs.Response) {
+func (s *Service) InsertMerchantItem(ctx *gin.Context, data dto.AddMerchantItemRequest) (*dto.AddMerchantItemResponse, errs.Response) {
 	db := s.DB()
 	var item model.MerchantItem
 
 	// check if merchant exists
 	stmt := `SELECT COUNT(*) FROM merchants WHERE merchant_id = $1`
 	var count int
-	if err := db.QueryRow(stmt, data.MerchantId).Scan(&count); err != nil {
+	if err := db.QueryRow(ctx, stmt, data.MerchantId).Scan(&count); err != nil {
 		return nil, errs.NewInternalError("Failed to check merchant", err)
 	}
 
 	if count != 0 {
 		stmt = `INSERT INTO merchant_items (item_id, merchant_id, "name", price, product_categories, image_url) VALUES($1, $2, $3, $4, $5, $6) RETURNING item_id`
 
-		itemId := db.QueryRow(stmt, data.ItemId, data.MerchantId, data.Name, data.Price, data.ProductCategory, data.ImageUrl)
+		itemId := db.QueryRow(ctx, stmt, data.ItemId, data.MerchantId, data.Name, data.Price, data.ProductCategory, data.ImageUrl)
 		if err := itemId.Scan(&item.ItemId); err != nil {
 			return nil, errs.NewInternalError("Failed to insert merchant item", err)
 		}
@@ -134,7 +136,7 @@ func (s *Service) InsertMerchantItem(data dto.AddMerchantItemRequest) (*dto.AddM
 		errs.Response{}
 }
 
-func (s *Service) GetMerchantItems(data dto.GetMerchantItemsRequest) (*dto.GetMerchantItemsResponse, errs.Response) {
+func (s *Service) GetMerchantItems(ctx *gin.Context, data dto.GetMerchantItemsRequest) (*dto.GetMerchantItemsResponse, errs.Response) {
 	db := s.DB()
 	var (
 		stmt  strings.Builder
@@ -173,7 +175,7 @@ func (s *Service) GetMerchantItems(data dto.GetMerchantItemsRequest) (*dto.GetMe
 
 	stmt.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", data.Limit, data.Offset))
 
-	rows, err := db.Query(stmt.String())
+	rows, err := db.Query(ctx, stmt.String())
 	if err != nil {
 		return nil, errs.NewInternalError("Failed to get merchant items", err)
 	}
