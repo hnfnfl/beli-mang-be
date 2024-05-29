@@ -36,20 +36,18 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	data := model.User{
-		Username: body.Username,
-		Email:    body.Email,
-	}
-
 	passHash, err := middleware.PasswordHash(body.Password, h.service.Config().Salt)
 	if err != nil {
 		errs.NewInternalError("hashing error", err).Send(ctx)
 		return
 	}
+	data := model.User{
+		Username:     body.Username,
+		Email:        body.Email,
+		PasswordHash: passHash,
+	}
 
 	role := extractRole(ctx.FullPath())
-	data.PasswordHash = passHash
-
 	switch role {
 	case "admin":
 		data.Role = "admin"
@@ -64,7 +62,6 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusCreated, token)
-
 }
 
 func (h *UserHandler) Login(ctx *gin.Context) {
@@ -82,15 +79,15 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	}
 
 	data := model.User{
-		Username: body.Username,
+		Username:     body.Username,
+		PasswordHash: []byte(body.Password + h.service.Config().Salt),
 	}
-
-	if body.Password != "" {
-		data.PasswordHash = []byte(body.Password + h.service.Config().Salt)
-	}
-
 	role := extractRole(ctx.FullPath())
 
+	var (
+		token *dto.AuthResponse
+		errs  errs.Response
+	)
 	switch role {
 	case "admin":
 		data.Role = "admin"
@@ -103,7 +100,6 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 		errs.Send(ctx)
 		return
 	}
-
 	ctx.JSON(http.StatusOK, token)
 }
 
@@ -112,5 +108,6 @@ func extractRole(path string) string {
 	if len(parts) >= 2 {
 		return parts[1]
 	}
+
 	return ""
 }

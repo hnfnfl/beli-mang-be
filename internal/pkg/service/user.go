@@ -64,7 +64,6 @@ func (s *Service) LoginUser(ctx *gin.Context, body model.User) (*dto.AuthRespons
 		&out.Email,
 		&out.PasswordHash,
 		&out.Role,
-		&out.EmailRole,
 	); err != nil {
 		return nil, errs.NewNotFoundError(errs.ErrUserNotFound)
 	}
