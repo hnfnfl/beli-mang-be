@@ -5,40 +5,43 @@ import (
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
 	"beli-mang/internal/pkg/middleware"
-	"database/sql"
+	"fmt"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *Service) RegisterUser(body model.User) (*dto.AuthResponse, errs.Response) {
-	var err error
+func (s *Service) RegisterUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response) {
+	// var err error
+
 	db := s.DB()
 
-	// check if username and email with same role is already exist
-	var usernameCount, emailCount int
-	stmt := `SELECT 
-    (SELECT COUNT(*) FROM users WHERE username = $1) AS username_count,
-    (SELECT COUNT(*) FROM users WHERE email = $2 AND role = $3) AS email_count`
-	if err := db.QueryRow(stmt, body.Username, body.Email, body.Role).Scan(&usernameCount, &emailCount); err != nil {
-		return nil, errs.NewInternalError("check user error", err)
-	}
-
-	if usernameCount > 0 {
-		return nil, errs.NewGenericError(http.StatusConflict, "username is already exist")
-	}
-
-	if emailCount > 0 {
-		return nil, errs.NewGenericError(http.StatusConflict, "email is already exist in the same role")
-	}
-
 	// insert user by role
-	stmt = "INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4)"
-	if _, err := db.Exec(stmt, body.Username, body.Email, body.PasswordHash, body.Role); err != nil {
+	// var userName string
+	// var emailRole string
+	stmt := "INSERT INTO users (username, email, password_hash, role, email_role) VALUES ($1, $2, $3, $4, $5) RETURNING username, email_role"
+	_, err := db.Exec(ctx, stmt, body.Username, body.Email, body.PasswordHash, body.Role, body.EmailRole)
+	fmt.Println(err)
+	pgErr, ok := err.(*pgconn.PgError)
+	fmt.Println(pgErr, ok)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == "23505" {
+				if pgErr.ConstraintName == "users_pkey" {
+					return nil, errs.NewGenericError(http.StatusConflict, "user/admin username is conflict")
+				} else if pgErr.ConstraintName == "users_email_role_key" {
+					return nil, errs.NewGenericError(http.StatusConflict, "user/admin email is conflict")
+				}
+			}
+		}
 		return nil, errs.NewInternalError("insert error", err)
 	}
 
-	token, err := middleware.JWTSign(s.Config(), body.Username, body.Role)
+	// generate token
+	var token string
+	token, err = middleware.JWTSign(s.Config(), body.Username, body.Role)
 	if err != nil {
 		return nil, errs.NewInternalError("token signing error", err)
 	}
@@ -46,7 +49,7 @@ func (s *Service) RegisterUser(body model.User) (*dto.AuthResponse, errs.Respons
 	return &dto.AuthResponse{Token: token}, errs.Response{}
 }
 
-func (s *Service) LoginUser(body model.User) (*dto.AuthResponse, errs.Response) {
+func (s *Service) LoginUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response) {
 	var (
 		err error
 		out model.User
@@ -55,18 +58,15 @@ func (s *Service) LoginUser(body model.User) (*dto.AuthResponse, errs.Response) 
 	db := s.DB()
 
 	// check NIP in database
-	stmt := "SELECT username, email, password_hash, role FROM users WHERE username = $1 AND role = $2"
-	if err := db.QueryRow(stmt, body.Username, body.Role).Scan(
+	stmt := "SELECT username, email, password_hash, role, email_role FROM users WHERE username = $1"
+	if err := db.QueryRow(ctx, stmt, body.Username).Scan(
 		&out.Username,
 		&out.Email,
 		&out.PasswordHash,
 		&out.Role,
+		&out.EmailRole,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errs.NewValidationError("credential does not match with any user", errs.ErrUnauthorized)
-		}
-
-		return nil, errs.NewInternalError("query error", err)
+		return nil, errs.NewNotFoundError(errs.ErrUserNotFound)
 	}
 
 	//compare password

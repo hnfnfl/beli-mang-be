@@ -5,17 +5,15 @@ import (
 	"beli-mang/internal/pkg/configuration"
 	"beli-mang/internal/pkg/middleware"
 	"beli-mang/internal/pkg/service"
-	"fmt"
+	"context"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
 func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
-	db, err := db.New(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to connect to database: %v", err)
-	}
+	ctx := context.Background()
+	db := db.GetConn(cfg, ctx)
 
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -30,8 +28,7 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	userHandler := NewUserHandler(service)
 	merchantHandler := NewMerchantHandler(service)
 	imageHandler := NewImageHandler(service)
-	// purchaseHandler := NewPurchaseHandler(service)
-	// orderHandler := NewOrderHandler(service)
+	orderHandler := NewOrderHandler(service)
 
 	// login
 	authGroup := router.Group("")
@@ -47,8 +44,10 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	merchantGroup.POST(":merchantId/items", merchantHandler.AddMerchantItem)
 	merchantGroup.GET(":merchantId/items", merchantHandler.GetMerchantItems)
 
-	purchaseGroup := router.Group("")
-	purchaseGroup.GET("/merchants/nearby/:latlong", merchantHandler.NearbyMerchant)
+	orderGroup := router.Group("")
+	orderGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "user"))
+	orderGroup.POST("/merchants/nearby/:latlong", merchantHandler.NearbyMerchant)
+	orderGroup.POST("", orderHandler.EstimateOrder)
 
 	imageGroup := router.Group("/image/")
 	imageGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
