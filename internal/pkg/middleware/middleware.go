@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -29,9 +30,9 @@ func JWTSign(cfg *configuration.Configuration, username string, role string) (st
 }
 
 func JWTAuth(secret string, expectedIssuer string) gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		const BearerSchema = "Bearer "
-		authHeader := c.GetHeader("Authorization")
+		authHeader := ctx.GetHeader("Authorization")
 		tokenString := ""
 
 		if authHeader != "" {
@@ -39,9 +40,7 @@ func JWTAuth(secret string, expectedIssuer string) gin.HandlerFunc {
 		}
 
 		if tokenString == "" {
-			errs.NewUnauthorizedError("Authorization header not provided").Send(c)
-			c.Abort()
-			return
+			errs.NewUnauthorizedError(ctx, "Authorization header not provided")
 		}
 
 		token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -52,38 +51,34 @@ func JWTAuth(secret string, expectedIssuer string) gin.HandlerFunc {
 			return []byte(secret), nil
 		})
 		if err != nil {
-			errs.NewUnauthorizedError(err.Error()).Send(c)
-			c.Abort()
-			return
+			errs.NewUnauthorizedError(ctx, err.Error())
+
 		}
 
 		if !token.Valid {
-			errs.NewUnauthorizedError(errs.ErrInvalidToken.Error()).Send(c)
-			c.Abort()
-			return
+			errs.NewUnauthorizedError(ctx, errs.ErrInvalidToken.Error())
 		}
 
 		claims, ok := token.Claims.(*jwt.RegisteredClaims)
 		if !ok || claims.Issuer != expectedIssuer {
-			errs.NewUnauthorizedError("Invalid User Role").Send(c)
-			c.Abort()
-			return
+			errs.NewUnauthorizedError(ctx, "Invalid User Role")
 		}
 
 		if claims.ExpiresAt.Before(time.Now()) {
-			errs.NewUnauthorizedError(errs.ErrTokenExpired.Error()).Send(c)
-			c.Abort()
-			return
+			errs.NewUnauthorizedError(ctx, errs.ErrTokenExpired.Error())
 		}
 
-		// c.Set("userID", claims.ID)
-		// c.Set("userNIP", claims.Issuer)
-		// c.Set("userRole", claims.Subject)
-
-		c.Next()
+		ctx.Next()
 	}
 }
 
 func PasswordHash(password string, salt string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password+salt), bcrypt.DefaultCost)
+}
+
+func LoggerMiddleware(log *logrus.Logger) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("logger", log)
+		c.Next()
+	}
 }

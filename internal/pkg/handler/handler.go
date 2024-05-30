@@ -1,57 +1,34 @@
 package handler
 
 import (
-	"beli-mang/internal/db"
 	"beli-mang/internal/pkg/configuration"
-	"beli-mang/internal/pkg/middleware"
-	"beli-mang/internal/pkg/service"
-	"context"
 
-	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 )
 
-func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
-	ctx := context.Background()
-	db := db.GetConn(cfg, ctx)
+type Handler struct {
+	cfg    *configuration.Configuration
+	db     *pgxpool.Pool
+	logger *logrus.Logger
+}
 
-	if cfg.Environment == "production" {
-		gin.SetMode(gin.ReleaseMode)
+func NewHandler(cfg *configuration.Configuration, db *pgxpool.Pool, logger *logrus.Logger) *Handler {
+	return &Handler{
+		cfg:    cfg,
+		db:     db,
+		logger: logger,
 	}
-	router := gin.Default()
-	// set db to gin context
-	router.Use(func(c *gin.Context) {
-		c.Set("db", db)
-	})
+}
 
-	service := service.NewService(cfg, db)
-	userHandler := NewUserHandler(service)
-	merchantHandler := NewMerchantHandler(service)
-	imageHandler := NewImageHandler(service)
-	orderHandler := NewOrderHandler(service)
+func (h *Handler) Config() *configuration.Configuration {
+	return h.cfg
+}
 
-	// login
-	authGroup := router.Group("")
-	authGroup.POST("/admin/register", userHandler.Register)
-	authGroup.POST("/admin/login", userHandler.Login)
-	authGroup.POST("/users/register", userHandler.Register)
-	authGroup.POST("/users/login", userHandler.Login)
+func (h *Handler) DB() *pgxpool.Pool {
+	return h.db
+}
 
-	merchantGroup := router.Group("/admin/merchants/")
-	merchantGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
-	merchantGroup.POST("", merchantHandler.AddMerchant)
-	merchantGroup.GET("", merchantHandler.GetMerchants)
-	merchantGroup.POST(":merchantId/items", merchantHandler.AddMerchantItem)
-	merchantGroup.GET(":merchantId/items", merchantHandler.GetMerchantItems)
-
-	orderGroup := router.Group("")
-	orderGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "user"))
-	orderGroup.POST("/merchants/nearby/:latlong", merchantHandler.NearbyMerchant)
-	orderGroup.POST("", orderHandler.EstimateOrder)
-
-	imageGroup := router.Group("/image/")
-	imageGroup.Use(middleware.JWTAuth(cfg.JWTSecret, "admin"))
-	imageGroup.POST("", imageHandler.UploadImage)
-
-	return router.Run(":8080")
+func (h *Handler) Logger() *logrus.Logger {
+	return h.logger
 }

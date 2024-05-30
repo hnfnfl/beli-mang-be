@@ -21,4 +21,3 @@ AWS:
   Secret.Access.Key: mysecret
   S3.Bucket.Name: mybucket
   Region: ap-southeast-1
-

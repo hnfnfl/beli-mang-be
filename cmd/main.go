@@ -2,8 +2,8 @@ package main
 
 import (
 	"beli-mang/internal/pkg/configuration"
-	"beli-mang/internal/pkg/handler"
 	"beli-mang/internal/pkg/logger"
+	"beli-mang/internal/pkg/server"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	if err := handler.Run(config, log); err != nil {
+	if err := server.Run(config, log); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 }
