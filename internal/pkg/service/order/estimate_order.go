@@ -16,11 +16,11 @@ import (
 func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateRequest) *dto.OrderEstimateResponse {
 	db := s.db
 	var (
-		startingMerchant dto.OrderEstimateRequestMerchant
+		startingMerchant dto.Orders
 		checkItem        string
 		checkMerchant    string
 		stmt             strings.Builder
-		calculateItems   []dto.OrderEstimateRequestItem
+		calculateItems   []dto.OrdersItems
 	)
 
 	var (
@@ -62,7 +62,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 		checkMerchant = fmt.Sprintf("'%s', ", order.MerchantId)
 		for _, item := range order.Items {
 			checkItem = fmt.Sprintf("'%s', ", item.ItemId)
-			calculateItems = append(calculateItems, dto.OrderEstimateRequestItem{
+			calculateItems = append(calculateItems, dto.OrdersItems{
 				ItemId:   item.ItemId,
 				Quantity: item.Quantity,
 			})
