@@ -15,9 +15,13 @@ type Meta struct {
 type Response struct {
 	Code    int         `json:"code,omitempty"`
 	Message string      `json:"message,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Err     string      `json:"error,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 	Meta    *Meta       `json:"meta,omitempty"`
+}
+
+func (e *Response) Error() string {
+	return e.Err
 }
 
 func NewGenericError(code int, msg string) Response {
@@ -30,22 +34,22 @@ func NewGenericError(code int, msg string) Response {
 func NewInternalError(msg string, err error) Response {
 	return Response{
 		Code:    http.StatusInternalServerError,
-		Error:   err.Error(),
+		Err:     err.Error(),
 		Message: msg,
 	}
 }
 
 func NewNotFoundError(err error) Response {
 	return Response{
-		Code:  http.StatusNotFound,
-		Error: err.Error(),
+		Code: http.StatusNotFound,
+		Err:  err.Error(),
 	}
 }
 
 func NewValidationError(msg string, err error) Response {
 	return Response{
 		Code:    http.StatusBadRequest,
-		Error:   err.Error(),
+		Err:     err.Error(),
 		Message: msg,
 	}
 }
@@ -53,7 +57,7 @@ func NewValidationError(msg string, err error) Response {
 func NewBadRequestError(msg string, err error) Response {
 	return Response{
 		Code:    http.StatusBadRequest,
-		Error:   err.Error(),
+		Err:     err.Error(),
 		Message: msg,
 	}
 }

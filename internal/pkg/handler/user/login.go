@@ -37,7 +37,7 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 		data.Role = "user"
 	}
 
-	token, errs := h.service.LoginUser(ctx, data, *h.handler.Config())
+	token, errs := h.service.LoginUser(ctx, data)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return

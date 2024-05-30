@@ -2,14 +2,14 @@ package user
 
 import (
 	"beli-mang/internal/pkg/handler"
-	"beli-mang/internal/pkg/service"
+	"beli-mang/internal/pkg/service/user"
 
 	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
 	handler *handler.Handler
-	service *service.Service
+	service *user.UserService
 }
 
 type UserInterface interface {
@@ -17,7 +17,8 @@ type UserInterface interface {
 	Login(ctx *gin.Context)
 }
 
-func NewHandler(e *gin.Engine, h *handler.Handler, s *service.Service) {
+func NewHandler(e *gin.Engine, h *handler.Handler) {
+	s := user.NewUserService(h.DB(), h.Config())
 	handler := &UserHandler{h, s}
 	addRoutes(e, handler)
 }

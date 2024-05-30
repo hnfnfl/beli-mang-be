@@ -1,7 +1,6 @@
-package service
+package image
 
 import (
-	"beli-mang/internal/pkg/configuration"
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
 	"context"
@@ -15,12 +14,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-func (s *Service) UploadImageProcess(ctx context.Context, file *multipart.FileHeader, cfg *configuration.Configuration) errs.Response {
+func (s *ImageService) UploadImage(ctx context.Context, file *multipart.FileHeader) errs.Response {
+	s3Config := s.cfg.S3Config
+
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(cfg.S3Config.Region),
+		Region: aws.String(s3Config.Region),
 		Credentials: credentials.NewStaticCredentials(
-			cfg.S3Config.ID,
-			cfg.S3Config.Secret,
+			s3Config.ID,
+			s3Config.Secret,
 			"",
 		),
 	})
@@ -37,7 +38,7 @@ func (s *Service) UploadImageProcess(ctx context.Context, file *multipart.FileHe
 	_, err = s3.New(sess).PutObject(&s3.PutObjectInput{
 		ACL:    aws.String("public-read"),
 		Body:   fileContent,
-		Bucket: aws.String(cfg.S3Config.Bucket),
+		Bucket: aws.String(s3Config.Bucket),
 		Key:    aws.String(file.Filename),
 	})
 	if err != nil {
@@ -45,7 +46,7 @@ func (s *Service) UploadImageProcess(ctx context.Context, file *multipart.FileHe
 	}
 
 	// return the image URL
-	imageURL := fmt.Sprintf("https://%s.s3-%s.amazonaws.com/%s", cfg.S3Config.Bucket, cfg.S3Config.Region, file.Filename)
+	imageURL := fmt.Sprintf("https://%s.s3-%s.amazonaws.com/%s", s3Config.Bucket, s3Config.Region, file.Filename)
 
 	return errs.Response{
 		Code:    http.StatusOK,

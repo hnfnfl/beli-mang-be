@@ -8,7 +8,6 @@ import (
 	"beli-mang/internal/pkg/handler/merchant"
 	"beli-mang/internal/pkg/handler/order"
 	"beli-mang/internal/pkg/handler/user"
-	"beli-mang/internal/pkg/service"
 	"context"
 
 	"github.com/gin-gonic/gin"
@@ -24,13 +23,12 @@ func Run(cfg *configuration.Configuration, log *logrus.Logger) error {
 	}
 	router := gin.Default()
 
-	service := service.NewService(db)
-	handler := handler.NewHandler(cfg, log)
+	handler := handler.NewHandler(cfg, db, log)
 
-	user.NewHandler(router, handler, service)
-	merchant.NewHandler(router, handler, service)
-	image.NewHandler(router, handler, service)
-	order.NewHandler(router, handler, service)
+	user.NewHandler(router, handler)
+	merchant.NewHandler(router, handler)
+	image.NewHandler(router, handler)
+	order.NewHandler(router, handler)
 
 	return router.Run(":8080")
 }

@@ -45,7 +45,7 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 		data.Role = "user"
 	}
 	data.EmailRole = fmt.Sprintf("%s_%s", data.Email, data.Role)
-	token, errs := h.service.RegisterUser(ctx, data, *h.handler.Config())
+	token, errs := h.service.RegisterUser(ctx, data)
 	if errs.Code != 0 {
 		errs.Send(ctx)
 		return

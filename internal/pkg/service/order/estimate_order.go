@@ -1,11 +1,11 @@
-package service
+package order
 
 import (
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
+	"beli-mang/internal/pkg/util"
 	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
 	"sync"
 	"time"
@@ -13,20 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func haversine(lat1, lon1, lat2, lon2 float64) float64 {
-	const R = 6371 // Earth radius in km
-	dLat := (lat2 - lat1) * math.Pi / 180.0
-	dLon := (lon2 - lon1) * math.Pi / 180.0
-	lat1 = lat1 * math.Pi / 180.0
-	lat2 = lat2 * math.Pi / 180.0
-
-	a := math.Sin(dLat/2)*math.Sin(dLat/2) + math.Sin(dLon/2)*math.Sin(dLon/2)*math.Cos(lat1)*math.Cos(lat2)
-	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-	return R * c
-}
-
-func (s *Service) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateRequest) (*dto.OrderEstimateResponse, errs.Response) {
-	db := s.DB()
+func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateRequest) (*dto.OrderEstimateResponse, errs.Response) {
+	db := s.db
 	var (
 		startingMerchant dto.OrderEstimateRequestMerchant
 		checkItem        string
@@ -132,7 +120,7 @@ func (s *Service) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateRequest)
 		); err != nil {
 			return nil, errs.NewInternalError("Failed to scan merchants", err)
 		}
-		totalDistance += haversine(prevLat, prevLong, merchantLat, merchantLong)
+		totalDistance += util.Haversine(prevLat, prevLong, merchantLat, merchantLong)
 		prevLat, prevLong = merchantLat, merchantLong
 	}
 
