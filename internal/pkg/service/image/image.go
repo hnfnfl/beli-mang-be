@@ -27,11 +27,13 @@ func (s *ImageService) UploadImage(ctx *gin.Context, file *multipart.FileHeader)
 	})
 	if err != nil {
 		errs.NewInternalError(ctx, "failed to create aws session", err)
+		return errs.Response{}
 	}
 
 	fileContent, err := file.Open()
 	if err != nil {
 		errs.NewInternalError(ctx, "failed to open file", err)
+		return errs.Response{}
 	}
 	defer fileContent.Close()
 
@@ -43,6 +45,7 @@ func (s *ImageService) UploadImage(ctx *gin.Context, file *multipart.FileHeader)
 	})
 	if err != nil {
 		errs.NewInternalError(ctx, "failed to upload image", err)
+		return errs.Response{}
 	}
 
 	// return the image URL

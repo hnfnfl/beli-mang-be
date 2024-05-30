@@ -14,6 +14,7 @@ func (h *ImageHandler) UploadImage(ctx *gin.Context) {
 	file, err := ctx.FormFile("file")
 	if err != nil {
 		errs.NewBadRequestError(ctx, "file not found", err)
+		return
 	}
 
 	body := &dto.ImageRequest{
