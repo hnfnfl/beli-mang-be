@@ -17,17 +17,21 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 	msg, err := util.JsonBinding(ctx, &body)
 	if err != nil {
 		errs.NewValidationError(ctx, msg, err)
+		return
 	}
 
 	// validate Request
 	if err := body.Validate(); err != nil {
 		errs.NewValidationError(ctx, "Request validation error", err)
+		return
 	}
 
 	passHash, err := middleware.PasswordHash(body.Password, h.handler.Config().Salt)
 	if err != nil {
 		errs.NewInternalError(ctx, "hashing error", err)
+		return
 	}
+
 	data := model.User{
 		Username:     body.Username,
 		Email:        body.Email,

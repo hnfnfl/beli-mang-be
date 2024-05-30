@@ -43,29 +43,34 @@ func JWTAuth(secret string, expectedIssuer string) gin.HandlerFunc {
 			errs.NewUnauthorizedError(ctx, "Authorization header not provided")
 		}
 
-		token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, errs.ErrInvalidSigningMethod
-			}
+		token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{},
+			func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, errs.ErrInvalidSigningMethod
+				}
 
-			return []byte(secret), nil
-		})
-		if err != nil {
+				return []byte(secret), nil
+			},
+		)
+		if err != nil || token == nil {
 			errs.NewUnauthorizedError(ctx, err.Error())
-
+			return
 		}
 
 		if !token.Valid {
 			errs.NewUnauthorizedError(ctx, errs.ErrInvalidToken.Error())
+			return
 		}
 
 		claims, ok := token.Claims.(*jwt.RegisteredClaims)
 		if !ok || claims.Issuer != expectedIssuer {
 			errs.NewUnauthorizedError(ctx, "Invalid User Role")
+			return
 		}
 
 		if claims.ExpiresAt.Before(time.Now()) {
 			errs.NewUnauthorizedError(ctx, errs.ErrTokenExpired.Error())
+			return
 		}
 
 		ctx.Next()
