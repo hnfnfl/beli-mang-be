@@ -14,13 +14,13 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	body := dto.LoginRequest{}
 	msg, err := util.JsonBinding(ctx, &body)
 	if err != nil {
-		errs.NewValidationError(msg, err).Send(ctx)
+		errs.NewValidationError(ctx, msg, err)
 		return
 	}
 
 	// validate Request
 	if err := body.Validate(); err != nil {
-		errs.NewValidationError("Request validation error", err).Send(ctx)
+		errs.NewValidationError(ctx, "Request validation error", err)
 		return
 	}
 
@@ -37,11 +37,7 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 		data.Role = "user"
 	}
 
-	token, errs := h.service.LoginUser(ctx, data)
-	if errs.Code != 0 {
-		errs.Send(ctx)
-		return
+	if token := h.service.LoginUser(ctx, data); token != nil {
+		ctx.JSON(http.StatusOK, token)
 	}
-
-	ctx.JSON(http.StatusOK, token)
 }

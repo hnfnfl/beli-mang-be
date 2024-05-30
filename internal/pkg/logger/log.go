@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,4 +44,12 @@ func NewLogger(logLevel string) (*logrus.Logger, error) {
 	}
 
 	return logger, nil
+}
+
+func FromContext(ctx *gin.Context) *logrus.Logger {
+	l, ok := ctx.Get("logger")
+	if !ok {
+		return nil
+	}
+	return l.(*logrus.Logger)
 }

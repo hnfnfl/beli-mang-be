@@ -1,6 +1,7 @@
 package errs
 
 import (
+	"beli-mang/internal/pkg/logger"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,55 +21,76 @@ type Response struct {
 	Meta    *Meta       `json:"meta,omitempty"`
 }
 
-func (e *Response) Error() string {
+func (e Response) Error() string {
 	return e.Err
 }
 
-func NewGenericError(code int, msg string) Response {
-	return Response{
-		Code:    code,
-		Message: msg,
-	}
+func finishWithError(ctx *gin.Context, resp Response) {
+	ctx.Abort()
+	_ = ctx.Error(resp)
 }
 
-func NewInternalError(msg string, err error) Response {
-	return Response{
+func NewGenericError(ctx *gin.Context, code int, msg string) {
+	finishWithError(ctx, Response{
+		Code:    code,
+		Message: msg,
+	})
+}
+
+func NewInternalError(ctx *gin.Context, msg string, err error) {
+	finishWithError(ctx, Response{
 		Code:    http.StatusInternalServerError,
 		Err:     err.Error(),
 		Message: msg,
-	}
+	})
 }
 
-func NewNotFoundError(err error) Response {
-	return Response{
+func NewNotFoundError(ctx *gin.Context, err error) {
+	finishWithError(ctx, Response{
 		Code: http.StatusNotFound,
 		Err:  err.Error(),
-	}
+	})
 }
 
-func NewValidationError(msg string, err error) Response {
-	return Response{
+func NewValidationError(ctx *gin.Context, msg string, err error) {
+	finishWithError(ctx, Response{
+		Code: http.StatusBadRequest,
+		Err:  err.Error(),
+	})
+}
+
+func NewBadRequestError(ctx *gin.Context, msg string, err error) {
+	finishWithError(ctx, Response{
 		Code:    http.StatusBadRequest,
 		Err:     err.Error(),
 		Message: msg,
-	}
+	})
 }
 
-func NewBadRequestError(msg string, err error) Response {
-	return Response{
-		Code:    http.StatusBadRequest,
-		Err:     err.Error(),
-		Message: msg,
-	}
-}
-
-func NewUnauthorizedError(msg string) Response {
-	return Response{
+func NewUnauthorizedError(ctx *gin.Context, msg string) {
+	finishWithError(ctx, Response{
 		Code:    http.StatusUnauthorized,
 		Message: msg,
-	}
+	})
 }
 
 func (e Response) Send(ctx *gin.Context) {
 	ctx.JSON(e.Code, e)
+}
+
+func ErrorHandler() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		ctx.Next()
+
+		if len(ctx.Errors) > 0 {
+			err := ctx.Errors[0].Err
+			switch err := err.(type) {
+			case Response:
+				err.Send(ctx)
+			default:
+				logger.FromContext(ctx).Error(err)
+				ctx.JSON(http.StatusInternalServerError, err)
+			}
+		}
+	}
 }

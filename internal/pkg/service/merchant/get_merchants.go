@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *MerchantService) GetMerchants(ctx *gin.Context, data dto.GetMerchantsRequest) (*dto.GetMerchantsResponse, errs.Response) {
+func (s *MerchantService) GetMerchants(ctx *gin.Context, data dto.GetMerchantsRequest) *dto.GetMerchantsResponse {
 	db := s.db
 	var (
 		stmt      strings.Builder
@@ -33,7 +33,7 @@ func (s *MerchantService) GetMerchants(ctx *gin.Context, data dto.GetMerchantsRe
 	}
 
 	if data.MerchantCategory == "<invalid>" {
-		return &merchants, errs.Response{}
+		return &merchants
 	} else if data.MerchantCategory != "" {
 		stmt.WriteString(fmt.Sprintf("AND merchant_categories = '%s' ", data.MerchantCategory))
 	}
@@ -50,7 +50,8 @@ func (s *MerchantService) GetMerchants(ctx *gin.Context, data dto.GetMerchantsRe
 
 	rows, err := db.Query(ctx, stmt.String())
 	if err != nil {
-		return nil, errs.NewInternalError("Failed to get merchants", err)
+		errs.NewInternalError(ctx, "Failed to get merchants", err)
+		return nil
 	}
 	defer rows.Close()
 
@@ -69,7 +70,8 @@ func (s *MerchantService) GetMerchants(ctx *gin.Context, data dto.GetMerchantsRe
 			&merchant.ImageUrl,
 			&createdAt,
 		); err != nil {
-			return nil, errs.NewInternalError("Failed to scan merchants", err)
+			errs.NewInternalError(ctx, "Failed to scan merchants", err)
+			return nil
 		}
 
 		merchant.CreatedAt = createdAt.Format(time.RFC3339Nano)
@@ -77,15 +79,14 @@ func (s *MerchantService) GetMerchants(ctx *gin.Context, data dto.GetMerchantsRe
 		merchants.Data = append(merchants.Data, merchant)
 	}
 
-	if len(merchants.Data) == 0 {
-		return &merchants, errs.Response{}
-	} else {
+	if len(merchants.Data) != 0 {
 		merchants.Meta = &errs.Meta{
 			Limit:  data.Limit,
 			Offset: data.Offset,
 			Total:  *count,
 		}
-
-		return &merchants, errs.Response{}
 	}
+
+	return &merchants
+
 }

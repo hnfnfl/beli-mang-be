@@ -13,7 +13,7 @@ func (h *MerchantHandler) AddMerchantItem(ctx *gin.Context) {
 	body := dto.AddMerchantItemRequest{}
 	msg, err := util.JsonBinding(ctx, &body)
 	if err != nil {
-		errs.NewValidationError(msg, err).Send(ctx)
+		errs.NewValidationError(ctx, msg, err)
 		return
 	}
 
@@ -40,18 +40,12 @@ func (h *MerchantHandler) AddMerchantItem(ctx *gin.Context) {
 
 	// validate Request
 	if err := body.Validate(); err != nil {
-		errs.NewValidationError("Request validation error", err).Send(ctx)
+		errs.NewValidationError(ctx, "Request validation error", err)
 		return
 	}
 
-	item, errs := h.service.InsertMerchantItem(ctx, body)
-	if errs.Code != 0 {
-		errs.Send(ctx)
-		return
+	item := h.service.InsertMerchantItem(ctx, body)
+	if item != nil {
+		ctx.JSON(http.StatusCreated, item)
 	}
-
-	ctx.JSON(
-		http.StatusCreated,
-		item,
-	)
 }

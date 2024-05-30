@@ -14,7 +14,7 @@ func (h *MerchantHandler) GetMerchantItems(ctx *gin.Context) {
 	body := dto.GetMerchantItemsRequest{}
 	msg, err := util.QueryBinding(ctx, &body)
 	if err != nil {
-		errs.NewValidationError(msg, err).Send(ctx)
+		errs.NewValidationError(ctx, msg, err)
 		return
 	}
 
@@ -27,18 +27,11 @@ func (h *MerchantHandler) GetMerchantItems(ctx *gin.Context) {
 	}
 
 	if err := body.Validate(); err != nil {
-		errs.NewValidationError("Request validation error", err).Send(ctx)
+		errs.NewValidationError(ctx, "Request validation error", err)
 		return
 	}
 
-	items, errs := h.service.GetMerchantItems(ctx, body)
-	if errs.Code != 0 {
-		errs.Send(ctx)
-		return
+	if items := h.service.GetMerchantItems(ctx, body); items != nil {
+		ctx.JSON(http.StatusOK, items)
 	}
-
-	ctx.JSON(
-		http.StatusOK,
-		items,
-	)
 }

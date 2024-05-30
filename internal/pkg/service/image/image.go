@@ -3,7 +3,6 @@ package image
 import (
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
-	"context"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -12,9 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/gin-gonic/gin"
 )
 
-func (s *ImageService) UploadImage(ctx context.Context, file *multipart.FileHeader) errs.Response {
+func (s *ImageService) UploadImage(ctx *gin.Context, file *multipart.FileHeader) errs.Response {
 	s3Config := s.cfg.S3Config
 
 	sess, err := session.NewSession(&aws.Config{
@@ -26,12 +26,12 @@ func (s *ImageService) UploadImage(ctx context.Context, file *multipart.FileHead
 		),
 	})
 	if err != nil {
-		return errs.NewInternalError("failed to create aws session", err)
+		errs.NewInternalError(ctx, "failed to create aws session", err)
 	}
 
 	fileContent, err := file.Open()
 	if err != nil {
-		return errs.NewInternalError("failed to open file", err)
+		errs.NewInternalError(ctx, "failed to open file", err)
 	}
 	defer fileContent.Close()
 
@@ -42,7 +42,7 @@ func (s *ImageService) UploadImage(ctx context.Context, file *multipart.FileHead
 		Key:    aws.String(file.Filename),
 	})
 	if err != nil {
-		return errs.NewInternalError("failed to upload image", err)
+		errs.NewInternalError(ctx, "failed to upload image", err)
 	}
 
 	// return the image URL

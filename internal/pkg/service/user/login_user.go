@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *UserService) LoginUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response) {
+func (s *UserService) LoginUser(ctx *gin.Context, body model.User) *dto.AuthResponse {
 	var (
 		err error
 		out model.User
@@ -27,20 +27,23 @@ func (s *UserService) LoginUser(ctx *gin.Context, body model.User) (*dto.AuthRes
 		&out.Role,
 		&out.EmailRole,
 	); err != nil {
-		return nil, errs.NewNotFoundError(errs.ErrUserNotFound)
+		errs.NewNotFoundError(ctx, errs.ErrUserNotFound)
+		return nil
 	}
 
 	//compare password
 	if err := bcrypt.CompareHashAndPassword(out.PasswordHash, body.PasswordHash); err != nil {
-		return nil, errs.NewBadRequestError("password is wrong", err)
+		errs.NewBadRequestError(ctx, "password is wrong", err)
+		return nil
 	}
 
 	// generate token
 	var token string
 	token, err = middleware.JWTSign(s.cfg, out.Username, out.Role)
 	if err != nil {
-		return nil, errs.NewInternalError("token signing error", err)
+		errs.NewInternalError(ctx, "token signing error", err)
+		return nil
 	}
 
-	return &dto.AuthResponse{Token: token}, errs.Response{}
+	return &dto.AuthResponse{Token: token}
 }

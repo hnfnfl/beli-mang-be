@@ -13,8 +13,7 @@ import (
 func (h *ImageHandler) UploadImage(ctx *gin.Context) {
 	file, err := ctx.FormFile("file")
 	if err != nil {
-		errs.NewBadRequestError("file not found", err).Send(ctx)
-		return
+		errs.NewBadRequestError(ctx, "file not found", err)
 	}
 
 	body := &dto.ImageRequest{
@@ -22,7 +21,7 @@ func (h *ImageHandler) UploadImage(ctx *gin.Context) {
 	}
 
 	if err := body.Validate(); err != nil {
-		errs.NewValidationError("Request validation error", err).Send(ctx)
+		errs.NewValidationError(ctx, "Request validation error", err)
 		return
 	}
 

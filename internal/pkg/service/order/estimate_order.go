@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateRequest) (*dto.OrderEstimateResponse, errs.Response) {
+func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateRequest) *dto.OrderEstimateResponse {
 	db := s.db
 	var (
 		startingMerchant dto.OrderEstimateRequestMerchant
@@ -32,7 +32,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 
 	dataJSON, err := json.Marshal(data)
 	if err != nil {
-		return nil, errs.Response{}
+		return nil
 	}
 
 	calculatedEstimateId := string(dataJSON)
@@ -41,7 +41,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	cachedItem, exists := cache[calculatedEstimateId]
 	if exists && time.Since(cachedItem.CachedAt) < cacheTTL {
 		cacheMutex.Unlock()
-		return &cachedItem.Response, errs.Response{}
+		return &cachedItem.Response
 	}
 	cacheMutex.Unlock()
 
@@ -79,7 +79,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 
 	rows, err := db.Query(ctx, stmt.String())
 	if err != nil {
-		return nil, errs.Response{}
+		return nil
 	}
 	defer rows.Close()
 
@@ -87,7 +87,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	for rows.Next() {
 		var item dto.OrderEstimateItemPrice
 		if err := rows.Scan(&item.ItemId, &item.Price); err != nil {
-			return nil, errs.Response{}
+			return nil
 		}
 		items = append(items, item)
 	}
@@ -105,7 +105,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 
 	rows, err = db.Query(ctx, stmt.String())
 	if err != nil {
-		return nil, errs.Response{}
+		return nil
 	}
 	defer rows.Close()
 
@@ -118,7 +118,8 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 			&merchantLat,
 			&merchantLong,
 		); err != nil {
-			return nil, errs.NewInternalError("Failed to scan merchants", err)
+			errs.NewInternalError(ctx, "Failed to scan merchants", err)
+			return nil
 		}
 		totalDistance += util.Haversine(prevLat, prevLong, merchantLat, merchantLong)
 		prevLat, prevLong = merchantLat, merchantLong
@@ -141,5 +142,5 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	}
 	cacheMutex.Unlock()
 
-	return &response, errs.Response{}
+	return &response
 }

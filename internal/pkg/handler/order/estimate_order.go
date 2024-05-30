@@ -13,25 +13,17 @@ func (h *OrderHandler) EstimateOrder(ctx *gin.Context) {
 	body := dto.OrderEstimateRequest{}
 	msg, err := util.JsonBinding(ctx, &body)
 	if err != nil {
-		errs.NewValidationError(msg, err).Send(ctx)
+		errs.NewValidationError(ctx, msg, err)
 		return
 	}
 
 	// validate Request
 	if err := body.Validate(); err != nil {
-		errs.NewValidationError("Request validation error", err).Send(ctx)
+		errs.NewValidationError(ctx, "Request validation error", err)
 		return
 	}
 
-	var (
-		res  *dto.OrderEstimateResponse
-		errs errs.Response
-	)
-
-	res, errs = h.service.EstimateOrder(ctx, body)
-	if errs.Code != 0 {
-		errs.Send(ctx)
-		return
+	if res := h.service.EstimateOrder(ctx, body); res != nil {
+		ctx.JSON(http.StatusOK, res)
 	}
-	ctx.JSON(http.StatusOK, res)
 }

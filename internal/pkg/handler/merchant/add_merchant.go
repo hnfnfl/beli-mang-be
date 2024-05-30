@@ -13,13 +13,13 @@ func (h *MerchantHandler) AddMerchant(ctx *gin.Context) {
 	body := dto.AddMerchantRequest{}
 	msg, err := util.JsonBinding(ctx, &body)
 	if err != nil {
-		errs.NewValidationError(msg, err).Send(ctx)
+		errs.NewValidationError(ctx, msg, err)
 		return
 	}
 
 	// validate Request
 	if err := body.Validate(); err != nil {
-		errs.NewValidationError("Request validation error", err).Send(ctx)
+		errs.NewValidationError(ctx, "Request validation error", err)
 		return
 	}
 
@@ -43,14 +43,7 @@ func (h *MerchantHandler) AddMerchant(ctx *gin.Context) {
 
 	body.MerchantId = util.UuidGenerator(prefixID, 15)
 
-	merchant, errs := h.service.InsertMerchant(ctx, body)
-	if errs.Code != 0 {
-		errs.Send(ctx)
-		return
+	if merchant := h.service.InsertMerchant(ctx, body); merchant != nil {
+		ctx.JSON(http.StatusCreated, merchant)
 	}
-
-	ctx.JSON(
-		http.StatusCreated,
-		merchant,
-	)
 }

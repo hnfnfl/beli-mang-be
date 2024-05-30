@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMerchantsRequest) (*dto.GetNearbyMerchantsResponse, errs.Response) {
+func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMerchantsRequest) *dto.GetNearbyMerchantsResponse {
 	db := s.db
 	var (
 		stmt   strings.Builder
@@ -39,7 +39,7 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 	}
 
 	if data.MerchantCategory == "<invalid>" {
-		return &result, errs.Response{}
+		return &result
 	} else if data.MerchantCategory != "" {
 		stmt.WriteString(fmt.Sprintf("AND merchant_categories = '%s' ", data.MerchantCategory))
 	}
@@ -48,7 +48,8 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 
 	rows, err := db.Query(ctx, stmt.String())
 	if err != nil {
-		return nil, errs.NewInternalError("Failed to get nearby merchants", err)
+		errs.NewInternalError(ctx, "Failed to get nearby merchants", err)
+		return nil
 	}
 	defer rows.Close()
 
@@ -67,7 +68,8 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 			&merchant.ImageUrl,
 			&createdAt,
 		); err != nil {
-			return nil, errs.NewInternalError("Failed to scan nearby merchants", err)
+			errs.NewInternalError(ctx, "Failed to scan nearby merchants", err)
+			return nil
 		}
 
 		merchant.Distance = util.Haversine(userLat, userLong, merchant.Location.Lat, merchant.Location.Long)
@@ -81,7 +83,7 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 	})
 
 	if len(result.Data.Merchant) == 0 {
-		return &result, errs.Response{}
+		return &result
 	}
 
 	// get merchant items
@@ -95,7 +97,8 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 
 		rows, err = db.Query(ctx, stmt.String())
 		if err != nil {
-			return nil, errs.NewInternalError("Failed to get merchant items", err)
+			errs.NewInternalError(ctx, "Failed to get merchant items", err)
+			return nil
 		}
 
 		for rows.Next() {
@@ -111,7 +114,8 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 				&item.ImageUrl,
 				&createdAt,
 			); err != nil {
-				return nil, errs.NewInternalError("Failed to scan merchant items", err)
+				errs.NewInternalError(ctx, "Failed to scan merchant items", err)
+				return nil
 			}
 
 			item.CreatedAt = createdAt.Format(time.RFC3339Nano)
@@ -120,5 +124,5 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 		}
 	}
 
-	return &result, errs.Response{}
+	return &result
 }

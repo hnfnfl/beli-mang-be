@@ -16,20 +16,17 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 	body := dto.RegisterRequest{}
 	msg, err := util.JsonBinding(ctx, &body)
 	if err != nil {
-		errs.NewValidationError(msg, err).Send(ctx)
-		return
+		errs.NewValidationError(ctx, msg, err)
 	}
 
 	// validate Request
 	if err := body.Validate(); err != nil {
-		errs.NewValidationError("Request validation error", err).Send(ctx)
-		return
+		errs.NewValidationError(ctx, "Request validation error", err)
 	}
 
 	passHash, err := middleware.PasswordHash(body.Password, h.handler.Config().Salt)
 	if err != nil {
-		errs.NewInternalError("hashing error", err).Send(ctx)
-		return
+		errs.NewInternalError(ctx, "hashing error", err)
 	}
 	data := model.User{
 		Username:     body.Username,
@@ -45,11 +42,8 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 		data.Role = "user"
 	}
 	data.EmailRole = fmt.Sprintf("%s_%s", data.Email, data.Role)
-	token, errs := h.service.RegisterUser(ctx, data)
-	if errs.Code != 0 {
-		errs.Send(ctx)
-		return
-	}
 
-	ctx.JSON(http.StatusCreated, token)
+	if token := h.service.RegisterUser(ctx, data); token != nil {
+		ctx.JSON(http.StatusCreated, token)
+	}
 }

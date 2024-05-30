@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func (s *UserService) RegisterUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response) {
+func (s *UserService) RegisterUser(ctx *gin.Context, body model.User) *dto.AuthResponse {
 	db := s.db
 
 	// insert user by role
@@ -25,21 +25,26 @@ func (s *UserService) RegisterUser(ctx *gin.Context, body model.User) (*dto.Auth
 		if pgErr, ok := err.(*pgconn.PgError); ok {
 			if pgErr.Code == "23505" {
 				if pgErr.ConstraintName == "users_pkey" {
-					return nil, errs.NewGenericError(http.StatusConflict, "user/admin username is conflict")
+					errs.NewGenericError(ctx, http.StatusConflict, "user/admin username is conflict")
+					return nil
 				} else if pgErr.ConstraintName == "users_email_role_key" {
-					return nil, errs.NewGenericError(http.StatusConflict, "user/admin email is conflict")
+					errs.NewGenericError(ctx, http.StatusConflict, "user/admin email is conflict")
+					return nil
 				}
 			}
 		}
-		return nil, errs.NewInternalError("insert error", err)
+
+		errs.NewInternalError(ctx, "insert error", err)
+		return nil
 	}
 
 	// generate token
 	var token string
 	token, err = middleware.JWTSign(s.cfg, body.Username, body.Role)
 	if err != nil {
-		return nil, errs.NewInternalError("token signing error", err)
+		errs.NewInternalError(ctx, "token signing error", err)
+		return nil
 	}
 
-	return &dto.AuthResponse{Token: token}, errs.Response{}
+	return &dto.AuthResponse{Token: token}
 }

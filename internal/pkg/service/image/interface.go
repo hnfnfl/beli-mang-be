@@ -3,8 +3,9 @@ package image
 import (
 	"beli-mang/internal/pkg/configuration"
 	"beli-mang/internal/pkg/errs"
-	"context"
 	"mime/multipart"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ImageService struct {
@@ -12,7 +13,7 @@ type ImageService struct {
 }
 
 type ImageServiceInterface interface {
-	UploadImage(ctx context.Context, file *multipart.FileHeader) errs.Response
+	UploadImage(ctx *gin.Context, file *multipart.FileHeader) errs.Response
 }
 
 func NewImageService(cfg *configuration.Configuration) *ImageService {

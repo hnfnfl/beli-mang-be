@@ -4,7 +4,6 @@ import (
 	"beli-mang/internal/db/model"
 	"beli-mang/internal/pkg/configuration"
 	"beli-mang/internal/pkg/dto"
-	"beli-mang/internal/pkg/errs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,8 +15,8 @@ type UserService struct {
 }
 
 type UserServiceInterface interface {
-	RegisterUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response)
-	LoginUser(ctx *gin.Context, body model.User) (*dto.AuthResponse, errs.Response)
+	RegisterUser(ctx *gin.Context, body model.User) *dto.AuthResponse
+	LoginUser(ctx *gin.Context, body model.User) *dto.AuthResponse
 }
 
 func NewUserService(db *pgxpool.Pool, cfg *configuration.Configuration) *UserService {

@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *MerchantService) InsertMerchantItem(ctx *gin.Context, data dto.AddMerchantItemRequest) (*dto.AddMerchantItemResponse, errs.Response) {
+func (s *MerchantService) InsertMerchantItem(ctx *gin.Context, data dto.AddMerchantItemRequest) *dto.AddMerchantItemResponse {
 	db := s.db
 	var item model.MerchantItem
 
@@ -16,7 +16,8 @@ func (s *MerchantService) InsertMerchantItem(ctx *gin.Context, data dto.AddMerch
 	stmt := `SELECT COUNT(*) FROM merchants WHERE merchant_id = $1`
 	var count int
 	if err := db.QueryRow(ctx, stmt, data.MerchantId).Scan(&count); err != nil {
-		return nil, errs.NewInternalError("Failed to check merchant", err)
+		errs.NewInternalError(ctx, "Failed to check merchant", err)
+		return nil
 	}
 
 	if count != 0 {
@@ -24,15 +25,16 @@ func (s *MerchantService) InsertMerchantItem(ctx *gin.Context, data dto.AddMerch
 
 		itemId := db.QueryRow(ctx, stmt, data.ItemId, data.MerchantId, data.Name, data.Price, data.ProductCategory, data.ImageUrl)
 		if err := itemId.Scan(&item.ItemId); err != nil {
-			return nil, errs.NewInternalError("Failed to insert merchant item", err)
+			errs.NewInternalError(ctx, "Failed to insert merchant item", err)
+			return nil
 		}
 
 	} else {
-		return nil, errs.NewNotFoundError(errs.ErrMerchantNotFound)
+		errs.NewNotFoundError(ctx, errs.ErrMerchantNotFound)
+		return nil
 	}
 
 	return &dto.AddMerchantItemResponse{
-			ItemId: item.ItemId,
-		},
-		errs.Response{}
+		ItemId: item.ItemId,
+	}
 }

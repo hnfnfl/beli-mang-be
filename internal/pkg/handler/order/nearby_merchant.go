@@ -15,28 +15,28 @@ func (h *OrderHandler) NearbyMerchant(ctx *gin.Context) {
 	body := dto.GetNearbyMerchantsRequest{}
 	msg, err := util.QueryBinding(ctx, &body)
 	if err != nil {
-		errs.NewValidationError(msg, err).Send(ctx)
+		errs.NewValidationError(ctx, msg, err)
 		return
 	}
 
 	latlong := ctx.Param("latlong")
 	latlongArr := strings.Split(latlong, ",")
 	if len(latlongArr) != 2 {
-		errs.NewValidationError("latlong", errs.ErrInvalidCoordinate).Send(ctx)
+		errs.NewValidationError(ctx, "latlong", errs.ErrInvalidCoordinate)
 		return
 	}
 
 	// Convert latlongArr[0] to float64
 	lat, err := strconv.ParseFloat(latlongArr[0], 64)
 	if err != nil {
-		errs.NewValidationError("lat", err).Send(ctx)
+		errs.NewValidationError(ctx, "lat", err)
 		return
 	}
 	body.Lat = lat
 
 	long, err := strconv.ParseFloat(latlongArr[1], 64)
 	if err != nil {
-		errs.NewValidationError("long", err).Send(ctx)
+		errs.NewValidationError(ctx, "long", err)
 		return
 	}
 	body.Long = long
@@ -46,18 +46,11 @@ func (h *OrderHandler) NearbyMerchant(ctx *gin.Context) {
 	}
 
 	if err := body.Validate(); err != nil {
-		errs.NewValidationError("Request validation error", err).Send(ctx)
+		errs.NewValidationError(ctx, "Request validation error", err)
 		return
 	}
 
-	data, errs := h.service.GetNearbyMerchants(ctx, body)
-	if errs.Code != 0 {
-		errs.Send(ctx)
-		return
+	if data := h.service.GetNearbyMerchants(ctx, body); data != nil {
+		ctx.JSON(http.StatusOK, data)
 	}
-
-	ctx.JSON(
-		http.StatusOK,
-		data,
-	)
 }
