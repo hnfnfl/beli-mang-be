@@ -29,9 +29,9 @@ type (
 	}
 
 	OrderEstimateResponse struct {
-		TotalPrice                     float64 `json:"totalPrice"`
-		EstimatedDeliveryTimeInMinutes float64 `json:"estimatedDeliveryTimeInMinutes"`
-		CalculatedEstimateId           string  `json:"calculatedEstimateId"`
+		TotalPrice           float64 `json:"totalPrice"`
+		EstDelivTime         int     `json:"estimatedDeliveryTimeInMinutes"`
+		CalculatedEstimateId string  `json:"calculatedEstimateId"`
 	}
 
 	CacheItem struct {

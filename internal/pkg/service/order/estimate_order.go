@@ -106,12 +106,12 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	}
 
 	speed := 40.0
-	estimatedTime := (totalDistance / speed) * 60
+	estimatedTime := int((totalDistance / speed) * 60)
 
 	response := dto.OrderEstimateResponse{
-		TotalPrice:                     totalPrice,
-		EstimatedDeliveryTimeInMinutes: estimatedTime,
-		CalculatedEstimateId:           calculatedEstimateId,
+		TotalPrice:           totalPrice,
+		EstDelivTime:         estimatedTime,
+		CalculatedEstimateId: calculatedEstimateId,
 	}
 
 	// cache the response if it's not already cached
