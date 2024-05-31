@@ -1,10 +1,12 @@
 package order
 
 import (
+	"beli-mang/internal/db/model"
 	"beli-mang/internal/pkg/dto"
 	"beli-mang/internal/pkg/errs"
 	"beli-mang/internal/pkg/util"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -27,11 +29,6 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	username := ctx.Value("username").(string)
 	timeStamp := time.Now().UnixNano()
 	calculatedEstimateId := fmt.Sprintf("%s-%d", username, timeStamp)
-
-	// check if the request is already cached
-	if cachedResponse, exist := cache.Get(calculatedEstimateId); exist {
-		return cachedResponse.(*dto.OrderEstimateResponse)
-	}
 
 	totalPrice := 0.0
 	userLat, userLong := data.UserLocation.Lat, data.UserLocation.Long
@@ -89,33 +86,116 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	}
 	defer rows.Close()
 
-	var totalDistance float64
-	var prevLat, prevLong = userLat, userLong
+	var merchants []model.Merchant
 
 	for rows.Next() {
-		var merchantLat, merchantLong float64
+		var merchant model.Merchant
 		if err := rows.Scan(
-			&merchantLat,
-			&merchantLong,
+			&merchant.Location.Lat,
+			&merchant.Location.Long,
 		); err != nil {
 			errs.NewInternalError(ctx, "Failed to scan merchants", err)
 			return nil
 		}
-		totalDistance += util.Haversine(prevLat, prevLong, merchantLat, merchantLong)
-		prevLat, prevLong = merchantLat, merchantLong
+		merchants = append(merchants, merchant)
 	}
+
+	// calculate the total distance
+	totalDistance := tspHeldKarp(
+		merchants[0].Location.Lat,
+		merchants[0].Location.Long,
+		userLat,
+		userLong,
+		merchants,
+	)
 
 	speed := 40.0
 	estimatedTime := int((totalDistance / speed) * 60)
 
-	response := dto.OrderEstimateResponse{
+	response := &dto.OrderEstimateResponse{
 		TotalPrice:           totalPrice,
 		EstDelivTime:         estimatedTime,
 		CalculatedEstimateId: calculatedEstimateId,
 	}
 
 	// cache the response if it's not already cached
-	cache.Set(calculatedEstimateId, &response, 24*time.Hour)
+	cacheData := dto.CacheItem{
+		Request:  data,
+		Response: *response,
+		CachedAt: time.Now(),
+	}
+	cache.Set(calculatedEstimateId, &cacheData, 24*time.Hour)
 
-	return &response
+	return response
+}
+
+func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.Merchant) float64 {
+	n := len(merchants)
+	allVisited := (1 << n) - 1
+	dp := make([][]float64, n)
+	for i := range dp {
+		dp[i] = make([]float64, 1<<n)
+		for j := range dp[i] {
+			dp[i][j] = math.MaxFloat64
+		}
+	}
+	dist := make([][]float64, n+1)
+	for i := range dist {
+		dist[i] = make([]float64, n+1)
+	}
+
+	// Precompute distances
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			if i != j {
+				dist[i][j] = util.Haversine(merchants[i].Location.Lat, merchants[i].Location.Long, merchants[j].Location.Lat, merchants[j].Location.Long)
+			}
+		}
+		dist[n][i] = util.Haversine(startLat, startLon, merchants[i].Location.Lat, merchants[i].Location.Long)
+		dist[i][n] = util.Haversine(merchants[i].Location.Lat, merchants[i].Location.Long, endLat, endLon)
+	}
+
+	var tsp func(last, visited int) float64
+	tsp = func(last, visited int) float64 {
+		if visited == allVisited {
+			return dist[last][n] // Distance to end point
+		}
+		if dp[last][visited] != math.MaxFloat64 {
+			return dp[last][visited]
+		}
+		for i := 0; i < n; i++ {
+			if visited&(1<<i) == 0 {
+				dp[last][visited] = math.Min(dp[last][visited], dist[last][i]+tsp(i, visited|(1<<i)))
+			}
+		}
+		return dp[last][visited]
+	}
+
+	bestPath := []model.Merchant{}
+	minDist := math.MaxFloat64
+
+	// Compute optimal path
+	for i := 0; i < n; i++ {
+		currentDist := dist[n][i] + tsp(i, 1<<i)
+		if currentDist < minDist {
+			minDist = currentDist
+			bestPath = []model.Merchant{merchants[i]}
+			visited := 1 << i
+			last := i
+			for visited != allVisited {
+				next := -1
+				for j := 0; j < n; j++ {
+					if visited&(1<<j) == 0 && (next == -1 || dist[last][j]+dp[j][visited|(1<<j)] < dist[last][next]+dp[next][visited|(1<<next)]) {
+						next = j
+					}
+				}
+				bestPath = append(bestPath, merchants[next])
+				// visited |= 1 << next
+				last = next
+			}
+		}
+	}
+
+	bestPath = append(bestPath, model.Merchant{Location: model.Location{Lat: endLat, Long: endLon}})
+	return minDist
 }
