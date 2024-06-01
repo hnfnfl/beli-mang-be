@@ -31,5 +31,7 @@ func (h *ImageHandler) UploadImage(ctx *gin.Context) {
 	file.Filename = fmt.Sprintf("%s%s", uuid, filepath.Ext(file.Filename))
 
 	// If the file passes all checks, you can continue with your processing
-	h.service.UploadImage(ctx, file).Send(ctx)
+	if errs := h.service.UploadImage(ctx, file); errs.Code != 0 {
+		ctx.JSON(errs.Code, errs)
+	}
 }
