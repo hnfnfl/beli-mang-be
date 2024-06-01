@@ -11,5 +11,11 @@ FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/beli-mang-be /app
 COPY local_configuration/config.yaml /app/local_configuration/
+ARG BUCKET_NAME
+ARG ACCESS_KEY
+ARG SECRET_KEY
+ENV AWS_S3_BUCKET_NAME=$BUCKET_NAME
+ENV AWS_ACCESS_KEY_ID=$ACCESS_KEY
+ENV AWS_SECRET_ACCESS_KEY=$SECRET_KEY
 EXPOSE 8080
 CMD ["./beli-mang-be"]
