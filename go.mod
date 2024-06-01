@@ -1,6 +1,6 @@
 module beli-mang
 
-go 1.20.0
+go 1.20
 
 require (
 	github.com/aws/aws-sdk-go v1.53.5
