@@ -5,7 +5,7 @@ on: [push]
 env:
   AWS_REGION: ap-southeast-1
   ECR_REPOSITORY: yuhuyuhuuya-repository
-  IMAGE_TAG: ${{ github.sha }}
+  IMAGE_TAG: ${{ github.ref_name }}-${{ github.sha }}
 
 jobs:
   deploy:
