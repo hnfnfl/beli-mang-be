@@ -6,6 +6,7 @@ import "errors"
 var (
 	ErrUserNotFound         = errors.New("user not found")
 	ErrMerchantNotFound     = errors.New("merchant not found")
+	ErrItemNotFound         = errors.New("item not found")
 	ErrCalculatedEstimateId = errors.New("calculateetimateid is not found in cache")
 	ErrPasswordMissmatch    = errors.New("password missmatch")
 	ErrInvalidClaimsType    = errors.New("invalid claims type")

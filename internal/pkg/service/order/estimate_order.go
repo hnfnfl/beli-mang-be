@@ -37,7 +37,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 
 	calculatedEstimateId := string(dataJSON)
 
-	cache.Lock()
+	cache.RLock()
 	cachedItem, exists := cache.Data[calculatedEstimateId]
 	if exists && time.Since(cachedItem.CachedAt) < cacheTTL {
 		cache.Unlock()
@@ -92,6 +92,12 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 		items = append(items, item)
 	}
 
+	// Check if all item IDs exist
+	if len(items) != len(calculateItems) {
+		errs.NewNotFoundError(ctx, errs.ErrItemNotFound)
+		return nil // Some item IDs do not exist
+	}
+
 	for _, item := range items {
 		for _, calculateItem := range calculateItems {
 			if calculateItem.ItemId == item.ItemId {
@@ -111,6 +117,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 
 	var totalDistance float64
 	var prevLat, prevLong = userLat, userLong
+	merchantExists := false
 
 	for rows.Next() {
 		var merchantLat, merchantLong float64
@@ -121,8 +128,23 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 			errs.NewInternalError(ctx, "Failed to scan merchants", err)
 			return nil
 		}
+
+		// Check if the merchant location is within 3 kilometers from the user's location
+		userLocationDistance := util.Haversine(userLat, userLong, merchantLat, merchantLong)
+		if userLocationDistance > 3 {
+			errs.NewBadRequestError(ctx, fmt.Sprintf("Merchant %v, %v coordinate is too far from user location %v, %v(> 3km² in Cartesian coordinate system)", merchantLat, merchantLong, userLat, userLong), errs.ErrBadParam)
+			return nil // Merchant location is too far
+		}
+
 		totalDistance += util.Haversine(prevLat, prevLong, merchantLat, merchantLong)
 		prevLat, prevLong = merchantLat, merchantLong
+		merchantExists = true
+	}
+
+	// Check if all merchant IDs exist
+	if !merchantExists {
+		errs.NewNotFoundError(ctx, errs.ErrMerchantNotFound)
+		return nil // Some merchant IDs do not exist
 	}
 
 	speed := 40.0
