@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"sync"
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -38,6 +39,19 @@ type (
 		Request  OrderEstimateRequest
 		Response OrderEstimateResponse
 		CachedAt time.Time
+	}
+
+	Cache struct {
+		sync.RWMutex
+		Data map[string]CacheItem
+	}
+
+	PostOrderRequest struct {
+		CalculatedEstimateId string `json:"calculatedEstimateId"`
+	}
+
+	PostOrderResponse struct {
+		OrderId string `json:"orderId"`
 	}
 )
 
@@ -125,6 +139,16 @@ func validateIsStartingPoint(value interface{}) error {
 	}
 	if count != 1 {
 		return validation.NewError("validation_isStartingPoint", "there must be exactly one starting point in orders")
+	}
+
+	return nil
+}
+
+func (r *PostOrderRequest) Validate() error {
+	if err := validation.ValidateStruct(r,
+		validation.Field(&r.CalculatedEstimateId, validation.Required),
+	); err != nil {
+		return err
 	}
 
 	return nil

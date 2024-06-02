@@ -1,8 +1,9 @@
 CREATE TABLE IF NOT EXISTS order_product (
-    order_id VARCHAR(255) PRIMARY KEY NOT NULL,
+    order_id VARCHAR(255) NOT NULL,
     user_id VARCHAR(255) NOT NULL,
     merchant_id VARCHAR(255) NOT NULL,
     item_id VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
