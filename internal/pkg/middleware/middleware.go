@@ -73,6 +73,8 @@ func JWTAuth(secret string, expectedIssuer string) gin.HandlerFunc {
 			return
 		}
 
+		ctx.Set("username", claims.ID)
+
 		ctx.Next()
 	}
 }
