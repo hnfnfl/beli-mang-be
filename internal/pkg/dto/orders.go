@@ -144,7 +144,7 @@ func validateIsStartingPoint(value interface{}) error {
 	return nil
 }
 
-func (r PostOrderRequest) Validate() error {
+func (r *PostOrderRequest) Validate() error {
 	if err := validation.ValidateStruct(r,
 		validation.Field(&r.CalculatedEstimateId, validation.Required),
 	); err != nil {
