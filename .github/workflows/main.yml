@@ -1,11 +1,11 @@
 name: Go
 
-on: [push]
+on: [push, pull_request]
 
 env:
   AWS_REGION: ap-southeast-1
   ECR_REPOSITORY: yuhuyuhuuya-repository
-  IMAGE_TAG: latest
+  IMAGE_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || format('{0}-{1}', github.ref, github.sha) }}
 
 jobs:
   deploy:
