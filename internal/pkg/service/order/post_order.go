@@ -28,16 +28,16 @@ func (s *OrderService) PostOrder(ctx *gin.Context, data dto.PostOrderRequest) *d
 
 	orderID := util.UuidGenerator("ord", 15)
 	db := s.db
-	entry := cachedData.(dto.CacheItem)
+	entry := cachedData.(*dto.CacheItem)
 	userID := ctx.Value("username").(string)
 
 	for _, order := range entry.Request.Orders {
 		for _, item := range order.Items {
 			query := `
-				INSERT INTO order_product (order_id, user_id, merchant_id, item_id, created_at)
-				VALUES ($1, $2, $3, $4, $5)
+				INSERT INTO order_product (order_id, user_id, merchant_id, item_id, quantity, created_at)
+				VALUES ($1, $2, $3, $4, $5, $6)
 			`
-			_, err := db.Exec(ctx, query, orderID, userID, order.MerchantId, item.ItemId, time.Now())
+			_, err := db.Exec(ctx, query, orderID, userID, order.MerchantId, item.ItemId, item.Quantity, time.Now())
 			if err != nil {
 				errs.NewInternalError(ctx, "Failed to insert orders", err)
 				return nil
