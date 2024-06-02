@@ -37,7 +37,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 
 	calculatedEstimateId := string(dataJSON)
 
-	cache.RLock()
+	cache.Lock()
 	cachedItem, exists := cache.Data[calculatedEstimateId]
 	if exists && time.Since(cachedItem.CachedAt) < cacheTTL {
 		cache.Unlock()
