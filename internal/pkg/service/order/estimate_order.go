@@ -66,6 +66,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	for rows.Next() {
 		var item dto.OrderEstimateItemPrice
 		if err := rows.Scan(&item.ItemId, &item.Price); err != nil {
+			errs.NewInternalError(ctx, "Failed to scan merchant items", err)
 			return nil
 		}
 
