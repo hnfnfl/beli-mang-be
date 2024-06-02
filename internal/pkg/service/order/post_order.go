@@ -23,7 +23,7 @@ func (s *OrderService) PostOrder(ctx *gin.Context, data dto.PostOrderRequest) *d
 	orderID := util.UuidGenerator("ord", 15)
 	db := s.db
 
-	userID := "default"
+	userID := ctx.Value("username").(string)
 
 	for _, order := range entry.Request.Orders {
 		for _, item := range order.Items {
