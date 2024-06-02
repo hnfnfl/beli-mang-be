@@ -17,4 +17,5 @@ var (
 	ErrBadParam             = errors.New("param request is invalid")
 	ErrInternalServerError  = errors.New("internal server error")
 	ErrInvalidCoordinate    = errors.New("invalid coordinate format")
+	ErrMerchantTooFar       = errors.New("distance between user and merchant is more than 3km")
 )

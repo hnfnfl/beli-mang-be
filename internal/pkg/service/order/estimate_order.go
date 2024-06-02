@@ -101,13 +101,17 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	}
 
 	// calculate the total distance
-	totalDistance := tspHeldKarp(
+	totalDistance, err := tspHeldKarp(
 		merchants[0].Location.Lat,
 		merchants[0].Location.Long,
 		userLat,
 		userLong,
 		merchants,
 	)
+	if err != nil {
+		errs.NewBadRequestError(ctx, "merchant too far", err)
+		return nil
+	}
 
 	speed := 40.0
 	estimatedTime := int((totalDistance / speed) * 60)
@@ -129,7 +133,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	return response
 }
 
-func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.Merchant) float64 {
+func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.Merchant) (float64, error) {
 	n := len(merchants)
 	allVisited := (1 << n) - 1
 	dp := make([][]float64, n)
@@ -153,6 +157,11 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 		}
 		dist[n][i] = util.Haversine(startLat, startLon, merchants[i].Location.Lat, merchants[i].Location.Long)
 		dist[i][n] = util.Haversine(merchants[i].Location.Lat, merchants[i].Location.Long, endLat, endLon)
+
+		// check if any of the distance is more than 3km
+		if dist[n][i] > 3.0 || dist[i][n] > 3.0 {
+			return 0, errs.ErrMerchantTooFar
+		}
 	}
 
 	var tsp func(last, visited int) float64
@@ -197,5 +206,5 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 	}
 
 	bestPath = append(bestPath, model.Merchant{Location: model.Location{Lat: endLat, Long: endLon}})
-	return minDist
+	return minDist, nil
 }
