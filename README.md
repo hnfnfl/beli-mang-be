@@ -27,7 +27,7 @@
 
 ## Description
 
-This API serves as the backbone for the BeliMang! food delivery application, allowing users to browse, order, and manage food and drink deliveries seamlessly. This documentation is designed to help developers integrate with our API quickly and efficiently.
+This API serves as the backbone for the BeliMang! food delivery application, allowing users to browse, order, and manage food and drink deliveries seamlessly. This documentation is designed to help developers integrate with our API quickly and efficiently. The API is built using Go and PostgreSQL, with the option to use AWS S3 for image uploads.
 
 ## Prerequisites
 

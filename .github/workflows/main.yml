@@ -1,0 +1,59 @@
+name: Go
+
+on: [push, pull_request]
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REPOSITORY: yuhuyuhuuya-repository
+  IMAGE_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || format('{0}-{1}', github.ref, github.sha) }}
+
+jobs:
+  deploy:
+    name: Deploy to ECR
+    runs-on: ubuntu-latest
+    environment: deployment
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: image-tag
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "::set-output name=tag::${{ github.head_ref }}-${{ github.sha }}"
+          else
+            BRANCH_NAME=$(echo "${{ github.ref }}" | sed -r 's|refs/heads/||g')
+            if [[ "${BRANCH_NAME}" == "main" ]]; then
+              echo "::set-output name=tag::latest"
+            else
+              echo "::set-output name=tag::${BRANCH_NAME}-${{ github.sha }}"
+            fi
+          fi
+        shell: bash
+
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v1
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: ${{ env.AWS_REGION }}
+
+      # - name: Login to Amazon ECR
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v1
+
+      # use docker hub login instead
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+        run: |
+          docker build --build-arg BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }} --build-arg ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY_ID }} --build-arg SECRET_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} -t ${{ secrets.DOCKER_HUB_USER }}/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push ${{ secrets.DOCKER_HUB_USER }}/$ECR_REPOSITORY:$IMAGE_TAG
+          # docker build --build-arg AWS_S3_BUCKET_NAME=$AWS_S3_BUCKET_NAME -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          # docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
