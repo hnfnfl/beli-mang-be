@@ -199,7 +199,7 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 					}
 				}
 				bestPath = append(bestPath, merchants[next])
-				// visited |= 1 << next
+				visited |= 1 << next
 				last = next
 			}
 		}
