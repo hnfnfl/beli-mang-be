@@ -16,7 +16,7 @@ type OrderHandler struct {
 type OrderInterface interface {
 	NearbyMerchant(ctx *gin.Context)
 	EstimateOrder(ctx *gin.Context)
-	// AddOrders(ctx *gin.Context)
+	PostOrder(ctx *gin.Context)
 	// GetOrders(ctx *gin.Context)
 }
 
@@ -32,7 +32,7 @@ func addRoutes(r *gin.Engine, h OrderInterface, secret string) {
 	group.Use(middleware.JWTAuth(secret, "user"))
 	group.GET("/merchants/nearby/:latlong", h.NearbyMerchant)
 	group.POST("/users/estimate", h.EstimateOrder)
-	// group.POST("/users/orders", h.AddOrders)
+	group.POST("/users/orders", h.PostOrder)
 	// group.GET("/users/orders", h.GetOrders)
 }
 

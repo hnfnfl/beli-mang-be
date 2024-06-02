@@ -7,10 +7,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+)
+
+var (
+	cache = dto.Cache{
+		Data: make(map[string]dto.CacheItem),
+	}
+	// cacheMutex = &sync.RWMutex{}
+	cacheTTL = 24 * time.Hour // Time-to-live for cache items
 )
 
 func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateRequest) *dto.OrderEstimateResponse {
@@ -23,13 +30,6 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 		calculateItems   []dto.OrderEstimateRequestItem
 	)
 
-	var (
-		cache      = make(map[string]dto.CacheItem)
-		cacheMutex = &sync.Mutex{}
-		cacheTTL   = 24 * time.Hour // Time-to-live for cache items
-
-	)
-
 	dataJSON, err := json.Marshal(data)
 	if err != nil {
 		return nil
@@ -37,13 +37,13 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 
 	calculatedEstimateId := string(dataJSON)
 
-	cacheMutex.Lock()
-	cachedItem, exists := cache[calculatedEstimateId]
+	cache.Lock()
+	cachedItem, exists := cache.Data[calculatedEstimateId]
 	if exists && time.Since(cachedItem.CachedAt) < cacheTTL {
-		cacheMutex.Unlock()
+		cache.Unlock()
 		return &cachedItem.Response
 	}
-	cacheMutex.Unlock()
+	cache.Unlock()
 
 	totalPrice := 0.0
 	userLat, userLong := data.UserLocation.Lat, data.UserLocation.Long
@@ -134,13 +134,13 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 		CalculatedEstimateId:           calculatedEstimateId,
 	}
 
-	cacheMutex.Lock()
-	cache[calculatedEstimateId] = dto.CacheItem{
+	cache.Lock()
+	cache.Data[calculatedEstimateId] = dto.CacheItem{
 		Request:  data,
 		Response: response,
 		CachedAt: time.Now(),
 	}
-	cacheMutex.Unlock()
+	cache.Unlock()
 
 	return &response
 }
