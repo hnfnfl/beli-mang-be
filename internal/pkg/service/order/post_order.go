@@ -10,16 +10,6 @@ import (
 )
 
 func (s *OrderService) PostOrder(ctx *gin.Context, data dto.PostOrderRequest) *dto.PostOrderResponse {
-
-	// cache.RLock()
-	// entry, found := cache.Data[data.CalculatedEstimateId]
-	// cache.RUnlock()
-
-	// if !found {
-	// 	errs.NewNotFoundError(ctx, errs.ErrCalculatedEstimateId)
-	// 	return nil
-	// }
-
 	cachedData, found := cache.Get(data.CalculatedEstimateId)
 	if !found {
 		errs.NewNotFoundError(ctx, errs.ErrCalculatedEstimateId)
@@ -45,10 +35,7 @@ func (s *OrderService) PostOrder(ctx *gin.Context, data dto.PostOrderRequest) *d
 		}
 	}
 
-	response := dto.PostOrderResponse{
+	return &dto.PostOrderResponse{
 		OrderId: orderID,
 	}
-
-	return &response
-
 }
