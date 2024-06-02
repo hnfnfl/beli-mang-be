@@ -11,10 +11,16 @@ import (
 
 func (s *OrderService) PostOrder(ctx *gin.Context, data dto.PostOrderRequest) *dto.PostOrderResponse {
 
-	cache.RLock()
-	entry, found := cache.Data[data.CalculatedEstimateId]
-	cache.RUnlock()
+	// cache.RLock()
+	// entry, found := cache.Data[data.CalculatedEstimateId]
+	// cache.RUnlock()
 
+	// if !found {
+	// 	errs.NewNotFoundError(ctx, errs.ErrCalculatedEstimateId)
+	// 	return nil
+	// }
+
+	cachedData, found := cache.Get(data.CalculatedEstimateId)
 	if !found {
 		errs.NewNotFoundError(ctx, errs.ErrCalculatedEstimateId)
 		return nil
@@ -22,7 +28,7 @@ func (s *OrderService) PostOrder(ctx *gin.Context, data dto.PostOrderRequest) *d
 
 	orderID := util.UuidGenerator("ord", 15)
 	db := s.db
-
+	entry := cachedData.(dto.CacheItem)
 	userID := ctx.Value("username").(string)
 
 	for _, order := range entry.Request.Orders {

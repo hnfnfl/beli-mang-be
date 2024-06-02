@@ -13,26 +13,26 @@ type (
 		Price  int    `json:"price"`
 	}
 
-	OrderEstimateRequestItem struct {
+	OrdersItems struct {
 		ItemId   string `json:"itemId"`
 		Quantity int    `json:"quantity"`
 	}
 
-	OrderEstimateRequestMerchant struct {
-		MerchantId      string                     `json:"merchantId"`
-		IsStartingPoint bool                       `json:"isStartingPoint"`
-		Items           []OrderEstimateRequestItem `json:"items"`
+	Orders struct {
+		MerchantId      string        `json:"merchantId"`
+		IsStartingPoint bool          `json:"isStartingPoint"`
+		Items           []OrdersItems `json:"items"`
 	}
 
 	OrderEstimateRequest struct {
-		UserLocation Location                       `json:"userLocation"`
-		Orders       []OrderEstimateRequestMerchant `json:"orders"`
+		UserLocation Location `json:"userLocation"`
+		Orders       []Orders `json:"orders"`
 	}
 
 	OrderEstimateResponse struct {
-		TotalPrice                     float64 `json:"totalPrice"`
-		EstimatedDeliveryTimeInMinutes float64 `json:"estimatedDeliveryTimeInMinutes"`
-		CalculatedEstimateId           string  `json:"calculatedEstimateId"`
+		TotalPrice           float64 `json:"totalPrice"`
+		EstDelivTime         int     `json:"estimatedDeliveryTimeInMinutes"`
+		CalculatedEstimateId string  `json:"calculatedEstimateId"`
 	}
 
 	CacheItem struct {
@@ -55,50 +55,7 @@ type (
 	}
 )
 
-func (r OrderEstimateRequestItem) Validate() error {
-	if err := validation.ValidateStruct(r,
-		validation.Field(&r.ItemId, validation.Required),
-		validation.Field(&r.Quantity, validation.Required),
-	); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r OrderEstimateRequestMerchant) Validate() error {
-	if err := validation.ValidateStruct(r,
-		validation.Field(&r.Items,
-			validation.Required,
-			validation.Each(validation.By(func(value interface{}) error {
-				orderEstimateRequestMerchant, _ := value.(OrderEstimateRequestMerchant)
-				return orderEstimateRequestMerchant.Validate()
-			})),
-		),
-		validation.Field(&r.MerchantId, validation.Required),
-		validation.Field(&r.IsStartingPoint, validation.Required),
-	); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (r *OrderEstimateRequest) Validate() error {
-	if err := validation.ValidateStruct(r,
-		validation.Field(&r.Orders,
-			validation.Required,
-			validation.Each(validation.By(func(value interface{}) error {
-				orderEstimateRequestMerchant, _ := value.(OrderEstimateRequestMerchant)
-				return orderEstimateRequestMerchant.Validate()
-			})),
-			validation.By(validateIsStartingPoint),
-		),
-		validation.Field(&r.UserLocation, validation.Required),
-	); err != nil {
-		return err
-	}
-
 	if err := validation.ValidateStruct(&r.UserLocation,
 		validation.Field(&r.UserLocation.Lat, validation.Required),
 		validation.Field(&r.UserLocation.Long, validation.Required),
@@ -110,18 +67,72 @@ func (r *OrderEstimateRequest) Validate() error {
 	if r.UserLocation.Lat < -90 || r.UserLocation.Lat > 90 {
 		return validation.NewError("lat", "latitude must be between -90 and 90")
 	}
-
 	if r.UserLocation.Long < -180 || r.UserLocation.Long > 180 {
 		return validation.NewError("long", "longitude must be between -180 and 180")
+	}
+
+	if err := validation.ValidateStruct(r,
+		validation.Field(&r.Orders,
+			validation.Required,
+			validation.Each(validation.By(
+				func(value interface{}) error {
+					orders, ok := value.(Orders)
+					if !ok {
+						return validation.NewError("validation_OrderEstimateRequest", "invalid orders")
+					}
+					return orders.Validate()
+				},
+			)),
+			validation.By(validateIsStartingPoint),
+		),
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Orders) Validate() error {
+	if err := validation.ValidateStruct(r,
+		validation.Field(&r.Items,
+			validation.Required,
+			validation.Each(validation.By(
+				func(value interface{}) error {
+					ordersItems, ok := value.(OrdersItems)
+					if !ok {
+						return validation.NewError("validation_Orders", "invalid orders items")
+					}
+					return ordersItems.Validate()
+				},
+			)),
+		),
+		validation.Field(&r.MerchantId, validation.Required),
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *OrdersItems) Validate() error {
+	if err := validation.ValidateStruct(r,
+		validation.Field(&r.ItemId, validation.Required),
+		validation.Field(&r.Quantity, validation.Required),
+	); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func validateIsStartingPoint(value interface{}) error {
-	req, _ := value.(OrderEstimateRequest)
+	req, ok := value.([]Orders)
+	if !ok {
+		return validation.NewError("validation_orderEstimateRequest", "invalid order request")
+	}
+
 	count := 0
-	for _, order := range req.Orders {
+	for _, order := range req {
 		if order.IsStartingPoint {
 			count++
 		}
@@ -129,6 +140,7 @@ func validateIsStartingPoint(value interface{}) error {
 	if count != 1 {
 		return validation.NewError("validation_isStartingPoint", "there must be exactly one starting point in orders")
 	}
+
 	return nil
 }
 
