@@ -24,6 +24,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 
 		checkMerchantIds = make([]string, 0)
 		checkItemIds     = make([]string, 0)
+		countItemIds     = 0
 	)
 
 	username := ctx.Value("username").(string)
@@ -73,8 +74,15 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 		for _, calculateItem := range calculateItems {
 			if calculateItem.ItemId == item.ItemId {
 				totalPrice += float64(item.Price) * float64(calculateItem.Quantity)
+				countItemIds += 1
 			}
 		}
+	}
+
+	// Check if all item IDs exist
+	if countItemIds != len(calculateItems) {
+		errs.NewNotFoundError(ctx, errs.ErrItemNotFound)
+		return nil // Some item IDs do not exist
 	}
 
 	stmt.Reset()
@@ -99,6 +107,12 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 			return nil
 		}
 		merchants = append(merchants, merchant)
+	}
+
+	// Check if all item IDs exist
+	if len(merchants) != len(calculateItems) {
+		errs.NewNotFoundError(ctx, errs.ErrMerchantNotFound)
+		return nil // Some item IDs do not exist
 	}
 
 	// calculate the total distance
@@ -207,5 +221,6 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 	}
 
 	bestPath = append(bestPath, model.Merchant{Location: model.Location{Lat: endLat, Long: endLon}})
+	fmt.Println("best path ", bestPath)
 	return minDist, nil
 }
