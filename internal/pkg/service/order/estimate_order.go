@@ -23,7 +23,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 		calculateItems   []dto.OrdersItems
 
 		checkMerchantIds = make([]string, 0)
-		countItemIds     = 0
+		checkItemIds     = make([]string, 0)
 	)
 
 	username := ctx.Value("username").(string)
@@ -36,28 +36,23 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	for _, order := range data.Orders {
 		if order.IsStartingPoint {
 			startingMerchant.MerchantId = order.MerchantId
-			break
 		}
-	}
 
-	merchantItemConditions := []string{}
-	for _, order := range data.Orders {
-		if order.IsStartingPoint {
-			startingMerchant.MerchantId = order.MerchantId
-		}
 		checkMerchantIds = append(checkMerchantIds, fmt.Sprintf("'%s'", order.MerchantId))
-		itemIds := []string{}
 		for _, item := range order.Items {
-			itemIds = append(itemIds, fmt.Sprintf("'%s'", item.ItemId))
+			checkItemIds = append(checkItemIds, fmt.Sprintf("'%s'", item.ItemId))
 			calculateItems = append(calculateItems, dto.OrdersItems{
-				ItemId:   item.ItemId,
-				Quantity: item.Quantity,
+				MerchantId: order.MerchantId,
+				ItemId:     item.ItemId,
+				Quantity:   item.Quantity,
 			})
 		}
-		merchantItemConditions = append(merchantItemConditions, fmt.Sprintf("(merchant_id = '%s' AND item_id IN (%s))", order.MerchantId, strings.Join(itemIds, ",")))
 	}
 
-	stmt.WriteString(fmt.Sprintf("SELECT item_id, price FROM merchant_items WHERE %s", strings.Join(merchantItemConditions, " OR ")))
+	checkMerchant := fmt.Sprintf("(%s)", strings.Join(checkMerchantIds, ","))
+	checkItem := fmt.Sprintf("(%s)", strings.Join(checkItemIds, ","))
+
+	stmt.WriteString(fmt.Sprintf("SELECT merchant_id, item_id, price FROM merchant_items WHERE merchant_id IN %s and item_id IN %s", checkMerchant, checkItem))
 
 	rows, err := db.Query(ctx, stmt.String())
 	if err != nil {
@@ -66,29 +61,52 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	}
 	defer rows.Close()
 
+	var items []model.MerchantItem
+	itemMap := make(map[string]map[string]interface{})
+
 	for rows.Next() {
-		var item dto.OrderEstimateItemPrice
-		if err := rows.Scan(&item.ItemId, &item.Price); err != nil {
+		var item model.MerchantItem
+		if err := rows.Scan(
+			&item.MerchantId,
+			&item.ItemId,
+			&item.Price,
+		); err != nil {
 			errs.NewInternalError(ctx, "Failed to scan merchant items", err)
 			return nil
 		}
+		items = append(items, item)
 
+		// Add item to map for quick lookup
+		if _, ok := itemMap[item.MerchantId]; !ok {
+			itemMap[item.MerchantId] = make(map[string]interface{})
+		}
+		itemMap[item.MerchantId][item.ItemId] = struct{}{}
+	}
+
+	if len(items) != len(calculateItems) {
+		// Check if merchantId or itemId not found
 		for _, calculateItem := range calculateItems {
-			if calculateItem.ItemId == item.ItemId {
-				totalPrice += float64(item.Price) * float64(calculateItem.Quantity)
-				countItemIds += 1
+			if itemMap, ok := itemMap[calculateItem.MerchantId]; ok {
+				if _, ok := itemMap[calculateItem.ItemId]; !ok {
+					errs.NewNotFoundError(ctx, fmt.Errorf("Item ID %s not found for Merchant ID %s", calculateItem.ItemId, calculateItem.MerchantId))
+					return nil
+				}
+			} else {
+				errs.NewNotFoundError(ctx, fmt.Errorf("Merchant ID %s not found", calculateItem.MerchantId))
+				return nil
 			}
 		}
 	}
 
-	// Check if all item IDs exist
-	if countItemIds != len(calculateItems) {
-		errs.NewNotFoundError(ctx, errs.ErrItemNotFound)
-		return nil // Some item IDs do not exist
+	for _, item := range items {
+		for _, calculateItem := range calculateItems {
+			if calculateItem.ItemId == item.ItemId {
+				totalPrice += float64(item.Price) * float64(calculateItem.Quantity)
+			}
+		}
 	}
 
 	stmt.Reset()
-	checkMerchant := fmt.Sprintf("(%s)", strings.Join(checkMerchantIds, ","))
 	stmt.WriteString(fmt.Sprintf("SELECT lat, long FROM (SELECT lat, long, CASE WHEN merchant_id = '%s' THEN 1 ELSE 0 END AS start_merchant FROM merchants WHERE merchant_id IN %s) AS subquery ORDER BY start_merchant DESC", startingMerchant.MerchantId, checkMerchant))
 
 	rows, err = db.Query(ctx, stmt.String())
@@ -99,7 +117,6 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	defer rows.Close()
 
 	var merchants []model.Merchant
-
 	for rows.Next() {
 		var merchant model.Merchant
 		if err := rows.Scan(
@@ -110,12 +127,6 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 			return nil
 		}
 		merchants = append(merchants, merchant)
-	}
-
-	// Check if all item IDs exist
-	if len(merchants) != len(checkMerchantIds) {
-		errs.NewNotFoundError(ctx, errs.ErrMerchantNotFound)
-		return nil // Some item IDs do not exist
 	}
 
 	// calculate the total distance
@@ -198,7 +209,7 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 		return dp[last][visited]
 	}
 
-	bestPath := []model.Merchant{}
+	// bestPath := []model.Merchant{}
 	minDist := math.MaxFloat64
 
 	// Compute optimal path
@@ -206,7 +217,7 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 		currentDist := dist[n][i] + tsp(i, 1<<i)
 		if currentDist < minDist {
 			minDist = currentDist
-			bestPath = []model.Merchant{merchants[i]}
+			// bestPath = []model.Merchant{merchants[i]}
 			visited := 1 << i
 			last := i
 			for visited != allVisited {
@@ -216,14 +227,13 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 						next = j
 					}
 				}
-				bestPath = append(bestPath, merchants[next])
+				// bestPath = append(bestPath, merchants[next])
 				visited |= 1 << next
 				last = next
 			}
 		}
 	}
 
-	bestPath = append(bestPath, model.Merchant{Location: model.Location{Lat: endLat, Long: endLon}})
-	fmt.Println("best path ", bestPath)
+	// bestPath = append(bestPath, model.Merchant{Location: model.Location{Lat: endLat, Long: endLon}})
 	return minDist, nil
 }
