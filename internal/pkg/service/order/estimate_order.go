@@ -83,6 +83,11 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 		itemMap[item.MerchantId][item.ItemId] = struct{}{}
 	}
 
+	if len(items) == 0 {
+		errs.NewNotFoundError(ctx, fmt.Errorf("No items found for the given merchant and item IDs"))
+		return nil
+	}
+
 	if len(items) != len(calculateItems) {
 		// Check if merchantId or itemId not found
 		for _, calculateItem := range calculateItems {
