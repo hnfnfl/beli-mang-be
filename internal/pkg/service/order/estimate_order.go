@@ -23,7 +23,6 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 		calculateItems   []dto.OrdersItems
 
 		checkMerchantIds = make([]string, 0)
-		checkItemIds     = make([]string, 0)
 		countItemIds     = 0
 	)
 
@@ -41,21 +40,24 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 		}
 	}
 
+	merchantItemConditions := []string{}
 	for _, order := range data.Orders {
+		if order.IsStartingPoint {
+			startingMerchant.MerchantId = order.MerchantId
+		}
 		checkMerchantIds = append(checkMerchantIds, fmt.Sprintf("'%s'", order.MerchantId))
+		itemIds := []string{}
 		for _, item := range order.Items {
-			checkItemIds = append(checkItemIds, fmt.Sprintf("'%s'", item.ItemId))
+			itemIds = append(itemIds, fmt.Sprintf("'%s'", item.ItemId))
 			calculateItems = append(calculateItems, dto.OrdersItems{
 				ItemId:   item.ItemId,
 				Quantity: item.Quantity,
 			})
 		}
+		merchantItemConditions = append(merchantItemConditions, fmt.Sprintf("(merchant_id = '%s' AND item_id IN (%s))", order.MerchantId, strings.Join(itemIds, ",")))
 	}
 
-	checkMerchant := fmt.Sprintf("(%s)", strings.Join(checkMerchantIds, ","))
-	checkItem := fmt.Sprintf("(%s)", strings.Join(checkItemIds, ","))
-
-	stmt.WriteString(fmt.Sprintf("SELECT item_id, price FROM merchant_items WHERE merchant_id IN %s and item_id IN %s", checkMerchant, checkItem))
+	stmt.WriteString(fmt.Sprintf("SELECT item_id, price FROM merchant_items WHERE %s", strings.Join(merchantItemConditions, " OR ")))
 
 	rows, err := db.Query(ctx, stmt.String())
 	if err != nil {
@@ -86,6 +88,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	}
 
 	stmt.Reset()
+	checkMerchant := fmt.Sprintf("(%s)", strings.Join(checkMerchantIds, ","))
 	stmt.WriteString(fmt.Sprintf("SELECT lat, long FROM (SELECT lat, long, CASE WHEN merchant_id = '%s' THEN 1 ELSE 0 END AS start_merchant FROM merchants WHERE merchant_id IN %s) AS subquery ORDER BY start_merchant DESC", startingMerchant.MerchantId, checkMerchant))
 
 	rows, err = db.Query(ctx, stmt.String())
@@ -110,7 +113,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	}
 
 	// Check if all item IDs exist
-	if len(merchants) != len(calculateItems) {
+	if len(merchants) != len(checkMerchantIds) {
 		errs.NewNotFoundError(ctx, errs.ErrMerchantNotFound)
 		return nil // Some item IDs do not exist
 	}
