@@ -1,12 +1,12 @@
 package model
 
 type Merchant struct {
-	MerchantId       string   `json:"merchant_id"`
+	MerchantId       string   `json:"merchantId"`
 	Name             string   `json:"name"`
-	MerchantCategory string   `json:"merchant_categories"`
-	ImageUrl         string   `json:"image_url"`
+	MerchantCategory string   `json:"merchantCategory"`
+	ImageUrl         string   `json:"imageUrl"`
 	Location         Location `json:"location"`
-	CreatedAt        string   `json:"created_at"`
+	CreatedAt        string   `json:"createdAt"`
 	Distance         float64  `json:"distance,omitempty"`
 }
 
@@ -17,10 +17,10 @@ type Location struct {
 
 type MerchantItem struct {
 	ItemId          string  `json:"item_id"`
-	MerchantId      string  `json:"merchant_id,omitempty"`
+	MerchantId      string  `json:"merchantId,omitempty"`
 	Name            string  `json:"name"`
-	ProductCategory string  `json:"product_categories"`
+	ProductCategory string  `json:"productCategory"`
 	Price           float64 `json:"price"`
-	ImageUrl        string  `json:"image_url"`
-	CreatedAt       string  `json:"created_at"`
+	ImageUrl        string  `json:"imageUrl"`
+	CreatedAt       string  `json:"createdAt"`
 }
