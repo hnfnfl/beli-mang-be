@@ -36,17 +36,15 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	for _, order := range data.Orders {
 		if order.IsStartingPoint {
 			startingMerchant.MerchantId = order.MerchantId
-			break
 		}
-	}
 
-	for _, order := range data.Orders {
 		checkMerchantIds = append(checkMerchantIds, fmt.Sprintf("'%s'", order.MerchantId))
 		for _, item := range order.Items {
 			checkItemIds = append(checkItemIds, fmt.Sprintf("'%s'", item.ItemId))
 			calculateItems = append(calculateItems, dto.OrdersItems{
-				ItemId:   item.ItemId,
-				Quantity: item.Quantity,
+				MerchantId: order.MerchantId,
+				ItemId:     item.ItemId,
+				Quantity:   item.Quantity,
 			})
 		}
 	}
@@ -54,7 +52,7 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	checkMerchant := fmt.Sprintf("(%s)", strings.Join(checkMerchantIds, ","))
 	checkItem := fmt.Sprintf("(%s)", strings.Join(checkItemIds, ","))
 
-	stmt.WriteString(fmt.Sprintf("SELECT item_id, price FROM merchant_items WHERE merchant_id IN %s and item_id IN %s", checkMerchant, checkItem))
+	stmt.WriteString(fmt.Sprintf("SELECT merchant_id, item_id, price FROM merchant_items WHERE merchant_id IN %s and item_id IN %s", checkMerchant, checkItem))
 
 	rows, err := db.Query(ctx, stmt.String())
 	if err != nil {
@@ -63,13 +61,49 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	}
 	defer rows.Close()
 
+	var items []model.MerchantItem
+	itemMap := make(map[string]map[string]interface{})
+
 	for rows.Next() {
-		var item dto.OrderEstimateItemPrice
-		if err := rows.Scan(&item.ItemId, &item.Price); err != nil {
+		var item model.MerchantItem
+		if err := rows.Scan(
+			&item.MerchantId,
+			&item.ItemId,
+			&item.Price,
+		); err != nil {
 			errs.NewInternalError(ctx, "Failed to scan merchant items", err)
 			return nil
 		}
+		items = append(items, item)
 
+		// Add item to map for quick lookup
+		if _, ok := itemMap[item.MerchantId]; !ok {
+			itemMap[item.MerchantId] = make(map[string]interface{})
+		}
+		itemMap[item.MerchantId][item.ItemId] = struct{}{}
+	}
+
+	if len(items) == 0 {
+		errs.NewNotFoundError(ctx, fmt.Errorf("No items found for the given merchant and item IDs"))
+		return nil
+	}
+
+	if len(items) != len(calculateItems) {
+		// Check if merchantId or itemId not found
+		for _, calculateItem := range calculateItems {
+			if itemMap, ok := itemMap[calculateItem.MerchantId]; ok {
+				if _, ok := itemMap[calculateItem.ItemId]; !ok {
+					errs.NewNotFoundError(ctx, fmt.Errorf("Item ID %s not found for Merchant ID %s", calculateItem.ItemId, calculateItem.MerchantId))
+					return nil
+				}
+			} else {
+				errs.NewNotFoundError(ctx, fmt.Errorf("Merchant ID %s not found", calculateItem.MerchantId))
+				return nil
+			}
+		}
+	}
+
+	for _, item := range items {
 		for _, calculateItem := range calculateItems {
 			if calculateItem.ItemId == item.ItemId {
 				totalPrice += float64(item.Price) * float64(calculateItem.Quantity)
@@ -88,7 +122,6 @@ func (s *OrderService) EstimateOrder(ctx *gin.Context, data dto.OrderEstimateReq
 	defer rows.Close()
 
 	var merchants []model.Merchant
-
 	for rows.Next() {
 		var merchant model.Merchant
 		if err := rows.Scan(
@@ -181,7 +214,7 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 		return dp[last][visited]
 	}
 
-	bestPath := []model.Merchant{}
+	// bestPath := []model.Merchant{}
 	minDist := math.MaxFloat64
 
 	// Compute optimal path
@@ -189,7 +222,7 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 		currentDist := dist[n][i] + tsp(i, 1<<i)
 		if currentDist < minDist {
 			minDist = currentDist
-			bestPath = []model.Merchant{merchants[i]}
+			// bestPath = []model.Merchant{merchants[i]}
 			visited := 1 << i
 			last := i
 			for visited != allVisited {
@@ -199,13 +232,13 @@ func tspHeldKarp(startLat, startLon, endLat, endLon float64, merchants []model.M
 						next = j
 					}
 				}
-				bestPath = append(bestPath, merchants[next])
+				// bestPath = append(bestPath, merchants[next])
 				visited |= 1 << next
 				last = next
 			}
 		}
 	}
 
-	bestPath = append(bestPath, model.Merchant{Location: model.Location{Lat: endLat, Long: endLon}})
+	// bestPath = append(bestPath, model.Merchant{Location: model.Location{Lat: endLat, Long: endLon}})
 	return minDist, nil
 }
