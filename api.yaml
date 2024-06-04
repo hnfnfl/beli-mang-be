@@ -1,0 +1,651 @@
+openapi: 3.0.0
+info:
+  title: API Documentation
+  version: 1.0.0
+  description: API Documentation for Beli Mang
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+tags:
+  - name: Admin
+  - name: User
+  - name: Merchant
+  - name: Order
+  - name: Image
+
+paths:
+  /admin/register:
+    post:
+      tags:
+        - Admin
+      summary: Admin Registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegister"
+      responses:
+        "200":
+          description: Successful registration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        "400":
+          description: "does not pass validation"
+
+  /admin/login:
+    post:
+      tags:
+        - Admin
+      summary: Admin Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLogin"
+      responses:
+        "200":
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /users/register:
+    post:
+      tags:
+        - User
+      summary: User Registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegister"
+      responses:
+        "200":
+          description: Successful registration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /users/login:
+    post:
+      tags:
+        - User
+      summary: User Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLogin"
+      responses:
+        "200":
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /image:
+    post:
+      tags:
+        - Image
+      summary: Image Upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Successful file upload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      imageUrl:
+                        type: string
+
+  /admin/merchants:
+    post:
+      tags:
+        - Merchant
+      summary: Add Merchant
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Merchant"
+      responses:
+        "200":
+          description: Merchant added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  merchantId:
+                    type: string
+
+    get:
+      tags:
+        - Merchant
+      summary: Get All Merchants
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: merchantId
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 5
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: name
+          schema:
+            type: string
+        - in: query
+          name: merchantCategory
+          schema:
+            $ref: "#/components/schemas/MerchantCategory"
+        - in: query
+          name: createdAt
+          schema:
+            $ref: "#/components/schemas/CreatedAt"
+      responses:
+        "200":
+          description: List of merchants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        merchantId:
+                          type: string
+                        name:
+                          type: string
+                        merchantCategory:
+                          type: string
+                        imageUrl:
+                          type: string
+                        location:
+                          $ref: "#/components/schemas/Location"
+                        createdAt:
+                          type: string
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+
+  /admin/merchants/{merchantId}/items:
+    post:
+      tags:
+        - Merchant
+      summary: Add Merchant Item
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: merchantId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                productCategory:
+                  type: string
+                price:
+                  type: number
+                imageUrl:
+                  type: string
+      responses:
+        "200":
+          description: Item added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  itemId:
+                    type: string
+
+    get:
+      tags:
+        - Merchant
+      summary: Get All Merchant Items
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: merchantId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: itemId
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 5
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: name
+          schema:
+            type: string
+        - in: query
+          name: productCategory
+          schema:
+            $ref: "#/components/schemas/ProductCategory"
+        - in: query
+          name: createdAt
+          schema:
+            $ref: "#/components/schemas/CreatedAt"
+      responses:
+        "200":
+          description: List of items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        itemId:
+                          type: string
+                        name:
+                          type: string
+                        productCategory:
+                          type: string
+                        price:
+                          type: number
+                        imageUrl:
+                          type: string
+                        createdAt:
+                          type: string
+                  meta:
+                    type: object
+                    properties:
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                      total:
+                        type: integer
+
+  /merchants/nearby/{lat},{long}:
+    get:
+      tags:
+        - Order
+      summary: Get Merchant Nearby
+      parameters:
+        - in: path
+          name: lat
+          required: true
+          schema:
+            type: number
+        - in: path
+          name: long
+          required: true
+          schema:
+            type: number
+        - in: query
+          name: merchantId
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 5
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: name
+          schema:
+            type: string
+        - in: query
+          name: merchantCategory
+          schema:
+            $ref: "#/components/schemas/MerchantCategory"
+      responses:
+        "200":
+          description: List of nearby merchants and items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        merchant:
+                          $ref: "#/components/schemas/Merchant"
+                        items:
+                          type: array
+                          items:
+                            $ref: "#/components/schemas/MerchantItem"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+
+  /users/estimate:
+    post:
+      tags:
+        - Order
+      summary: Estimate Delivery Time and Cost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userLocation:
+                  $ref: "#/components/schemas/Location"
+                orders:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      merchantId:
+                        type: string
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            itemId:
+                              type: string
+                            quantity:
+                              type: integer
+      responses:
+        "200":
+          description: Estimated delivery time and cost
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalPrice:
+                    type: number
+                  estimatedDeliveryTimeInMinutes:
+                    type: integer
+                  calculatedEstimateId:
+                    type: string
+
+  /users/orders:
+    post:
+      tags:
+        - Order
+      summary: Place Order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                calculatedEstimateId:
+                  type: string
+      responses:
+        "200":
+          description: Order placed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orderId:
+                    type: string
+
+    get:
+      tags:
+        - Order
+      summary: Get Order Details of User
+      parameters:
+        - in: query
+          name: merchantId
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 5
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: name
+          schema:
+            type: string
+        - in: query
+          name: merchantCategory
+          schema:
+            $ref: "#/components/schemas/MerchantCategory"
+      responses:
+        "200":
+          description: List of user orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    orderId:
+                      type: string
+                    orders:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          merchant:
+                            $ref: "#/components/schemas/Merchant"
+                          items:
+                            type: array
+                            items:
+                             $ref: "#/components/schemas/MerchantItem"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserLogin:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 5
+          maxLength: 30
+          uniqueItems: true
+        password:
+          type: string
+          minLength: 5
+          maxLength: 30
+      required:
+        - username
+        - password
+
+    UserRegister:
+      allOf:
+        - $ref: "#/components/schemas/UserLogin"
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+          required:
+            - email
+
+    Merchant:
+      type: object
+      properties:
+        merchantId:
+          type: string
+        name:
+          type: string
+          minLength: 2
+          maxLength: 30
+        merchantCategory:
+          $ref: "#/components/schemas/MerchantCategory"
+        imageUrl:
+          type: string
+          format: uri
+        location:
+          $ref: "#/components/schemas/Location"
+        createdAt:
+          type: string
+      required:
+        - name
+        - merchantCategory
+        - imageUrl
+        - location
+
+    MerchantItem:
+      type: object
+      properties:
+        itemId:
+          type: string
+        name:
+          type: string
+        productCategory:
+          type: string
+        price:
+          type: number
+        imageUrl:
+          type: string
+        createdAt:
+          type: string
+
+    MerchantGetParams:
+      type: object
+      properties:
+        limit:
+          type: integer
+          default: 5
+        offset:
+          type: integer
+          default: 0
+        name:
+          type: string
+        createdAt:
+          type: string
+          enum:
+            - asc
+            - desc
+
+    MerchantCategory:
+      type: string
+      enum:
+        - SmallRestaurant
+        - MediumRestaurant
+        - LargeRestaurant
+        - MerchandiseRestaurant
+        - BoothKiosk
+        - ConvenienceStore
+
+    ProductCategory:
+      type: string
+      enum:
+        - Beverage
+        - Food
+        - Snack
+        - Condiments
+        - Additions
+
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+        long:
+          type: number
+
+    CreatedAt:
+      type: string
+      enum:
+        - asc
+        - desc
+
+    Meta:
+      type: object
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
