@@ -14,6 +14,7 @@ type OrderService struct {
 type OrderServiceInterface interface {
 	GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMerchantsRequest) *dto.GetNearbyMerchantsResponse
 	EstimateOrder(ctx *gin.Context, data dto.OrderEstimateRequest) *dto.OrderEstimateResponse
+	PostOrder(ctx *gin.Context, data dto.PostOrderRequest) *dto.PostOrderResponse
 }
 
 func NewOrderService(db *pgxpool.Pool) *OrderService {
