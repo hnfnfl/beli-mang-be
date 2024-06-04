@@ -1,6 +1,6 @@
 name: Go
 
-on: [push, pull_request]
+on: [push]
 
 env:
   AWS_REGION: ap-southeast-1
@@ -19,15 +19,11 @@ jobs:
       - name: Set image tag
         id: image-tag
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "::set-output name=tag::${{ github.head_ref }}-${{ github.sha }}"
+          BRANCH_NAME=$(echo "${{ github.ref }}" | sed -r 's|refs/heads/||g')
+          if [[ "${BRANCH_NAME}" == "main" ]]; then
+            echo "::set-output name=tag::latest"
           else
-            BRANCH_NAME=$(echo "${{ github.ref }}" | sed -r 's|refs/heads/||g')
-            if [[ "${BRANCH_NAME}" == "main" ]]; then
-              echo "::set-output name=tag::latest"
-            else
-              echo "::set-output name=tag::${BRANCH_NAME}-${{ github.sha }}"
-            fi
+            echo "::set-output name=tag::${BRANCH_NAME}-${{ github.sha }}"
           fi
         shell: bash
 
