@@ -8,14 +8,10 @@ import (
 )
 
 type (
-	OrderEstimateItemPrice struct {
-		ItemId string `json:"itemId"`
-		Price  int    `json:"price"`
-	}
-
 	OrdersItems struct {
-		ItemId   string `json:"itemId"`
-		Quantity int    `json:"quantity"`
+		MerchantId string
+		ItemId     string
+		Quantity   int
 	}
 
 	Orders struct {
