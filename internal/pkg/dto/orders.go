@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"beli-mang/internal/db/model"
+	"strconv"
 	"sync"
 	"time"
 
@@ -48,6 +50,36 @@ type (
 
 	PostOrderResponse struct {
 		OrderId string `json:"orderId"`
+	}
+
+	GetOrdersRequest struct {
+		MerchantId       string `form:"merchantId"`
+		Limit            int    `form:"limit"`
+		Offset           int    `form:"offset"`
+		Name             string `form:"name"`
+		MerchantCategory string `form:"merchantCategory"`
+	}
+
+	// Item struct
+	OrderItemResponse struct {
+		ItemId          string  `json:"itemId"`
+		Name            string  `json:"name"`
+		ProductCategory string  `json:"productCategory"`
+		Price           float64 `json:"price"`
+		Quantity        int     `json:"quantity"`
+		ImageURL        string  `json:"imageUrl"`
+		CreatedAt       string  `json:"createdAt"`
+	}
+
+	// Detail struct
+	DetailOrderResponse struct {
+		Merchant model.Merchant      `json:"merchant"`
+		Items    []OrderItemResponse `json:"items"`
+	}
+
+	GetOrdersResponse struct {
+		OrderId string                `json:"orderId"`
+		Orders  []DetailOrderResponse `json:"orders"`
 	}
 )
 
@@ -148,4 +180,25 @@ func (r *PostOrderRequest) Validate() error {
 	}
 
 	return nil
+}
+
+func (r *GetOrdersRequest) Validate() error {
+	_, err := strconv.Atoi(r.MerchantId)
+	if err == nil {
+		return validation.NewError("merchantId", "merchantId must be a string")
+	}
+
+	_, err = strconv.Atoi(r.Name)
+	if err == nil {
+		return validation.NewError("name", "name must be a string")
+	}
+
+	if err := validation.Validate(&r.MerchantCategory,
+		validation.In(MerchantCategoryList...),
+	); err != nil {
+		r.MerchantCategory = "<invalid>"
+	}
+
+	return nil
+
 }
