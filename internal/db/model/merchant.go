@@ -16,7 +16,7 @@ type Location struct {
 }
 
 type MerchantItem struct {
-	ItemId          string  `json:"item_id"`
+	ItemId          string  `json:"itemId"`
 	MerchantId      string  `json:"merchantId,omitempty"`
 	Name            string  `json:"name"`
 	ProductCategory string  `json:"productCategory"`
