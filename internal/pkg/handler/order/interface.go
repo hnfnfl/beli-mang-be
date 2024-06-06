@@ -4,6 +4,7 @@ import (
 	"beli-mang/internal/pkg/handler"
 	"beli-mang/internal/pkg/middleware"
 	"beli-mang/internal/pkg/service/order"
+	"beli-mang/internal/pkg/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,6 +29,8 @@ func NewHandler(e *gin.Engine, h *handler.Handler) {
 }
 
 func addRoutes(r *gin.Engine, h OrderInterface, secret string) {
+	r.Use(util.PageNotFoundForLocation())
+
 	group := r.Group("")
 	group.Use(middleware.JWTAuth(secret, "user"))
 	group.GET("/merchants/nearby/:latlong", h.NearbyMerchant)

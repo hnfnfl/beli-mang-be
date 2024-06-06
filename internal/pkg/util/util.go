@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -86,4 +87,15 @@ func ValidateEmailFormat(email interface{}) error {
 	}
 
 	return nil
+}
+
+func PageNotFoundForLocation() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.URL.Path == "/merchants/nearby/a/b" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
 }
