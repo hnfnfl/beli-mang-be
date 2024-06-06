@@ -120,6 +120,7 @@ type GetNearbyMerchantsResponse struct {
 		Merchant []model.Merchant     `json:"merchant"`
 		Items    []model.MerchantItem `json:"items"`
 	} `json:"data"`
+	Meta *errs.Meta `json:"meta,omitempty"`
 }
 
 func (r *AddMerchantRequest) Validate() error {
