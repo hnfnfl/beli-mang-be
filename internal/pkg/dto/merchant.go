@@ -116,11 +116,13 @@ type GetNearbyMerchantsRequest struct {
 }
 
 type GetNearbyMerchantsResponse struct {
-	Data struct {
-		Merchant []model.Merchant     `json:"merchant"`
-		Items    []model.MerchantItem `json:"items"`
-	} `json:"data"`
-	Meta *errs.Meta `json:"meta,omitempty"`
+	Data []GetNearbyMerchantsResponseData `json:"data"`
+	Meta *errs.Meta                       `json:"meta,omitempty"`
+}
+
+type GetNearbyMerchantsResponseData struct {
+	Merchant model.Merchant       `json:"merchant"`
+	Items    []model.MerchantItem `json:"items"`
 }
 
 func (r *AddMerchantRequest) Validate() error {

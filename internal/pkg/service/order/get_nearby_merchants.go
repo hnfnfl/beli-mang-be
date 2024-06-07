@@ -20,8 +20,7 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 	)
 
 	// set default value
-	result.Data.Merchant = make([]model.Merchant, 0)
-	result.Data.Items = make([]model.MerchantItem, 0)
+	result.Data = make([]dto.GetNearbyMerchantsResponseData, 0)
 
 	userLat := data.Lat
 	userLong := data.Long
@@ -66,6 +65,7 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 	for rows.Next() {
 		var (
 			merchant  model.Merchant
+			items     = make([]model.MerchantItem, 0)
 			createdAt time.Time
 			distance  float64
 			total     int
@@ -89,54 +89,57 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 		merchant.CreatedAt = createdAt.Format(time.RFC3339Nano)
 		totalData = total
 
-		result.Data.Merchant = append(result.Data.Merchant, merchant)
-	}
+		// get merchant items if data.Name != ""
+		if data.Name != "" {
+			stmt.Reset()
+			stmt.WriteString("WITH totalCount AS (SELECT COUNT(*) as total FROM merchant_items)")
+			stmt.WriteString(fmt.Sprintf("SELECT item_id, name, product_categories, price, image_url, created_at, tc.total FROM merchant_items mi, totalCount tc WHERE 1=1 AND merchant_id = '%s' ", merchant.MerchantId))
 
-	if len(result.Data.Merchant) == 0 {
-		return &result
-	}
+			stmt.WriteString(fmt.Sprintf("AND name LIKE '%%%s%%' ", data.Name))
 
-	// get merchant items
-	if data.Name != "" {
-		stmt.Reset()
-		stmt.WriteString("WITH totalCount AS (SELECT COUNT(*) as total FROM merchant_items)")
-		stmt.WriteString("SELECT item_id, name, product_categories, price, image_url, created_at, tc.total FROM merchant_items mi, totalCount tc WHERE 1=1 ")
+			stmt.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", data.Limit, data.Offset))
 
-		stmt.WriteString(fmt.Sprintf("AND name LIKE '%%%s%%' ", data.Name))
-
-		stmt.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", data.Limit, data.Offset))
-
-		rows, err = db.Query(ctx, stmt.String())
-		if err != nil {
-			errs.NewInternalError(ctx, "Failed to get merchant items", err)
-			return nil
-		}
-
-		var totalItems int
-		for rows.Next() {
-			var (
-				item      model.MerchantItem
-				createdAt time.Time
-			)
-
-			if err := rows.Scan(
-				&item.ItemId,
-				&item.Name,
-				&item.ProductCategory,
-				&item.Price,
-				&item.ImageUrl,
-				&createdAt,
-				&totalItems,
-			); err != nil {
-				errs.NewInternalError(ctx, "Failed to scan merchant items", err)
+			itemRows, err := db.Query(ctx, stmt.String())
+			if err != nil {
+				errs.NewInternalError(ctx, "Failed to get merchant items", err)
 				return nil
 			}
 
-			item.CreatedAt = createdAt.Format(time.RFC3339Nano)
+			var totalItems int
+			for itemRows.Next() {
+				var (
+					item      model.MerchantItem
+					createdAt time.Time
+				)
 
-			result.Data.Items = append(result.Data.Items, item)
+				if err := itemRows.Scan(
+					&item.ItemId,
+					&item.Name,
+					&item.ProductCategory,
+					&item.Price,
+					&item.ImageUrl,
+					&createdAt,
+					&total,
+				); err != nil {
+					errs.NewInternalError(ctx, "Failed to scan merchant items", err)
+					return nil
+				}
+
+				item.CreatedAt = createdAt.Format(time.RFC3339Nano)
+
+				items = append(items, item)
+			}
+			totalData += totalItems
 		}
-		totalData += totalItems
+
+		result.Data = append(result.Data, dto.GetNearbyMerchantsResponseData{
+			Merchant: merchant,
+			Items:    items,
+		})
+	}
+
+	if len(result.Data) == 0 {
+		return &result
 	}
 
 	result.Meta = &errs.Meta{
