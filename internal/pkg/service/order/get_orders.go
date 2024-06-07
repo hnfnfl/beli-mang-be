@@ -12,14 +12,14 @@ import (
 )
 
 func (s *OrderService) GetOrders(ctx *gin.Context, data dto.GetOrdersRequest) *[]dto.GetOrdersResponse {
-
 	db := s.db
 	var (
 		stmt strings.Builder
 	)
+
 	// set default value
 	getOrderResponse := make([]dto.GetOrdersResponse, 0)
-	orders := map[string]*dto.GetOrdersResponse{}
+	orders := map[string]map[string]*dto.OrderResponse{}
 
 	query := `
 	SELECT 
@@ -51,7 +51,7 @@ func (s *OrderService) GetOrders(ctx *gin.Context, data dto.GetOrdersRequest) *[
 	}
 
 	if data.Name != "" {
-		stmt.WriteString(fmt.Sprintf("AND (LOWER(m.name) LIKE '%%%s%%' OR LOWER(i.name) LIKE '%%%s%%'", data.Name, data.Name))
+		stmt.WriteString(fmt.Sprintf("AND m.name LIKE '%%%s%%' OR i.name LIKE '%%%s%%'", data.Name, data.Name))
 	}
 
 	if data.MerchantCategory == "<invalid>" {
@@ -101,21 +101,29 @@ func (s *OrderService) GetOrders(ctx *gin.Context, data dto.GetOrdersRequest) *[
 		merchant.CreatedAt = merchantCreatedAt.Format(time.RFC3339Nano)
 
 		if orders[orderId] == nil {
-			orders[orderId] = &dto.GetOrdersResponse{
-				OrderId: orderId,
-				Orders: []dto.DetailOrderResponse{{
-					Merchant: merchant,
-					Items:    []dto.OrderItemResponse{},
-				}},
+			orders[orderId] = make(map[string]*dto.OrderResponse)
+		}
+
+		if orders[orderId][merchant.MerchantId] == nil {
+			orders[orderId][merchant.MerchantId] = &dto.OrderResponse{
+				Merchant: merchant,
+				Items:    []dto.OrderItemResponse{},
 			}
 		}
 
-		item.CreatedAt = itemCreatedAt.Format(time.RFC3339Nano)
-
-		orders[orderId].Orders[0].Items = append(orders[orderId].Orders[0].Items, item)
+		orders[orderId][merchant.MerchantId].Items = append(orders[orderId][merchant.MerchantId].Items, item)
 	}
-	for _, order := range orders {
-		getOrderResponse = append(getOrderResponse, *order)
+
+	for orderId, order := range orders {
+		var or []dto.OrderResponse
+		for _, o := range order {
+			or = append(or, *o)
+		}
+
+		getOrderResponse = append(getOrderResponse, dto.GetOrdersResponse{
+			OrderId: orderId,
+			Orders:  or,
+		})
 	}
 
 	return &getOrderResponse

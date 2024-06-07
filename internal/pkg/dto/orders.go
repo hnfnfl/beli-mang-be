@@ -72,14 +72,14 @@ type (
 	}
 
 	// Detail struct
-	DetailOrderResponse struct {
+	OrderResponse struct {
 		Merchant model.Merchant      `json:"merchant"`
 		Items    []OrderItemResponse `json:"items"`
 	}
 
 	GetOrdersResponse struct {
-		OrderId string                `json:"orderId"`
-		Orders  []DetailOrderResponse `json:"orders"`
+		OrderId string          `json:"orderId"`
+		Orders  []OrderResponse `json:"orders"`
 	}
 )
 
