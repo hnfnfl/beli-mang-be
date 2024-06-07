@@ -19,7 +19,6 @@ func (s *OrderService) GetOrders(ctx *gin.Context, data dto.GetOrdersRequest) *[
 
 	// set default value
 	getOrderResponse := make([]dto.GetOrdersResponse, 0)
-	orders := map[string]map[string]*dto.OrderResponse{}
 
 	query := `
 	SELECT 
@@ -68,6 +67,8 @@ func (s *OrderService) GetOrders(ctx *gin.Context, data dto.GetOrdersRequest) *[
 		return nil
 	}
 	defer rows.Close()
+
+	orders := map[string]map[string]*dto.OrderResponse{}
 
 	for rows.Next() {
 		var (
