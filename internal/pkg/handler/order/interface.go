@@ -18,7 +18,7 @@ type OrderInterface interface {
 	NearbyMerchant(ctx *gin.Context)
 	EstimateOrder(ctx *gin.Context)
 	PostOrder(ctx *gin.Context)
-	// GetOrders(ctx *gin.Context)
+	GetOrders(ctx *gin.Context)
 }
 
 func NewHandler(e *gin.Engine, h *handler.Handler) {
@@ -36,7 +36,7 @@ func addRoutes(r *gin.Engine, h OrderInterface, secret string) {
 	group.GET("/merchants/nearby/:latlong", h.NearbyMerchant)
 	group.POST("/users/estimate", h.EstimateOrder)
 	group.POST("/users/orders", h.PostOrder)
-	// group.GET("/users/orders", h.GetOrders)
+	group.GET("/users/orders", h.GetOrders)
 }
 
 var (
