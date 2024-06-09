@@ -100,6 +100,7 @@ func (s *OrderService) GetOrders(ctx *gin.Context, data dto.GetOrdersRequest) *[
 		}
 
 		merchant.CreatedAt = merchantCreatedAt.Format(time.RFC3339Nano)
+		item.CreatedAt = itemCreatedAt.Format(time.RFC3339Nano)
 
 		if orders[orderId] == nil {
 			orders[orderId] = make(map[string]*dto.OrderResponse)
