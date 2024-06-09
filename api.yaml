@@ -298,6 +298,8 @@ paths:
           description: "Request doesn't pass validation"
         "401":
           description: "Unauthorized"
+        "404":
+          description: "MerchantId not found"
         "500":
           description: "Internal server error"
 
@@ -373,6 +375,12 @@ paths:
                         type: integer
                       total:
                         type: integer
+        "401":
+          description: "Unauthorized"
+        "404":
+          description: "MerchantId not found"
+        "500":
+          description: "Internal server error"
 
   /merchants/nearby/{lat},{long}:
     get:
@@ -433,6 +441,12 @@ paths:
                             $ref: "#/components/schemas/MerchantItem"
                   meta:
                     $ref: "#/components/schemas/Meta"
+        "400":
+          description: "Request doesn't pass validation"
+        "401":
+          description: "Unauthorized"
+        "500":
+          description: "Internal server error"
 
   /users/estimate:
     post:
@@ -478,6 +492,14 @@ paths:
                     type: integer
                   calculatedEstimateId:
                     type: string
+        "400":
+          description: "Request doesn't pass validation"
+        "401":
+          description: "Unauthorized"
+        "404":
+          description: "MerchantId or ItemId not found"
+        "500":
+          description: "Internal server error"
 
   /users/orders:
     post:
@@ -503,6 +525,12 @@ paths:
                 properties:
                   orderId:
                     type: string
+        "401":
+          description: "Unauthorized"
+        "404":
+          description: "CalculatedEstimateId not found"
+        "500":
+          description: "Internal server error"
 
     get:
       tags:
@@ -554,6 +582,10 @@ paths:
                             type: array
                             items:
                               $ref: "#/components/schemas/MerchantItem"
+        "401":
+          description: "Unauthorized"
+        "500":
+          description: "Internal server error"
 
 components:
   securitySchemes:
