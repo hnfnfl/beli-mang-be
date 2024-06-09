@@ -19,6 +19,11 @@ func (h *OrderHandler) EstimateOrder(ctx *gin.Context) {
 
 	// validate Request
 	if err := body.Validate(); err != nil {
+		if err.Error() == "itemId not found" {
+			errs.NewNotFoundError(ctx, errs.ErrItemNotFound)
+			return
+		}
+
 		errs.NewValidationError(ctx, "Request validation error", err)
 		return
 	}

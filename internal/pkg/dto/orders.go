@@ -2,6 +2,7 @@ package dto
 
 import (
 	"beli-mang/internal/db/model"
+	"errors"
 	"strconv"
 	"sync"
 	"time"
@@ -99,6 +100,11 @@ func (r *OrderEstimateRequest) Validate() error {
 		return validation.NewError("long", "longitude must be between -180 and 180")
 	}
 
+	for _, order := range r.Orders {
+		if len(order.Items) == 0 {
+			return errors.New("itemId not found")
+		}
+	}
 	if err := validation.ValidateStruct(r,
 		validation.Field(&r.Orders,
 			validation.Required,
