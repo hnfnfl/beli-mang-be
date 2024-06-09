@@ -1,8 +1,9 @@
 package dto
 
 import (
+	"beli-mang/internal/pkg/util"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
 type Role string
@@ -37,7 +38,7 @@ type AuthResponse struct {
 func (r RegisterRequest) Validate() error {
 	return validation.ValidateStruct(&r,
 		validation.Field(&r.Username, validation.Required, validation.Length(5, 30)),
-		validation.Field(&r.Email, validation.Required, is.Email),
+		validation.Field(&r.Email, validation.Required, validation.By(util.ValidateEmailFormat)),
 		validation.Field(&r.Password, validation.Required, validation.Length(5, 30)),
 	)
 }

@@ -46,17 +46,17 @@ func (s *OrderService) GetOrders(ctx *gin.Context, data dto.GetOrdersRequest) *[
 	stmt.WriteString(query)
 
 	if data.MerchantId != "" {
-		stmt.WriteString(fmt.Sprintf("AND op.merchant_id = '%s' ", data.MerchantId))
+		stmt.WriteString(fmt.Sprintf(" AND op.merchant_id = '%s' ", data.MerchantId))
 	}
 
 	if data.Name != "" {
-		stmt.WriteString(fmt.Sprintf("AND m.name LIKE '%%%s%%' OR i.name LIKE '%%%s%%'", data.Name, data.Name))
+		stmt.WriteString(fmt.Sprintf(" AND m.name LIKE '%%%s%%' OR i.name LIKE '%%%s%%'", data.Name, data.Name))
 	}
 
 	if data.MerchantCategory == "<invalid>" {
 		return &getOrderResponse
 	} else if data.MerchantCategory != "" {
-		stmt.WriteString(fmt.Sprintf("AND m.merchant_categories = '%s' ", data.MerchantCategory))
+		stmt.WriteString(fmt.Sprintf(" AND m.merchant_categories = '%s' ", data.MerchantCategory))
 	}
 
 	stmt.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", data.Limit, data.Offset))
@@ -100,6 +100,7 @@ func (s *OrderService) GetOrders(ctx *gin.Context, data dto.GetOrdersRequest) *[
 		}
 
 		merchant.CreatedAt = merchantCreatedAt.Format(time.RFC3339Nano)
+		item.CreatedAt = itemCreatedAt.Format(time.RFC3339Nano)
 
 		if orders[orderId] == nil {
 			orders[orderId] = make(map[string]*dto.OrderResponse)
