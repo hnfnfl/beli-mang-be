@@ -39,21 +39,22 @@ func (s *OrderService) GetNearbyMerchants(ctx *gin.Context, data dto.GetNearbyMe
 	))
 
 	if data.MerchantId != "" {
-		stmt.WriteString(fmt.Sprintf("AND merchant_id = '%s' ", data.MerchantId))
+		stmt.WriteString(fmt.Sprintf(" AND merchant_id = '%s' ", data.MerchantId))
 	}
 
 	if data.Name != "" {
-		stmt.WriteString(fmt.Sprintf("AND name LIKE '%%%s%%' ", data.Name))
+		stmt.WriteString(fmt.Sprintf(" AND name LIKE '%%%s%%' ", data.Name))
 	}
 
 	if data.MerchantCategory == "<invalid>" {
 		return &result
 	} else if data.MerchantCategory != "" {
-		stmt.WriteString(fmt.Sprintf("AND merchant_categories = '%s' ", data.MerchantCategory))
+		stmt.WriteString(fmt.Sprintf(" AND merchant_categories = '%s' ", data.MerchantCategory))
 	}
 
-	stmt.WriteString("ORDER BY distance")
+	stmt.WriteString(" ORDER BY distance")
 	stmt.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", data.Limit, data.Offset))
+	fmt.Println(stmt.String())
 
 	rows, err := db.Query(ctx, stmt.String())
 	if err != nil {
